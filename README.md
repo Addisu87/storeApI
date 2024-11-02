@@ -12,6 +12,12 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
+<!-- Deactivate the Virtual Environment -->
+
+```bash
+deactivate
+```
+
 <!-- Upgrade pip -->
 
 ```bash
@@ -56,3 +62,11 @@ fastapi dev main.py
  Alternative API docs http://127.0.0.1:8000/redoc
  Check openapi.json  http://127.0.0.1:8000/openapi.json
 ```
+
+├─── api - The folder containing the api endpoints, models, repositories etc.
+├─── dependencies - Global dependencies used for the entire application like the current user.
+├─── middleware - Global middleware associated with the entire application.
+├─── setup - Scripts used to install the system. like creating tables, adding views etc
+├─── static - static files like logo.png
+├─── tables - Application tables definitions. a file for each table
+└─── utilities - Functions, classes to help with application development. Collections, Database wrappers, password hashers etc
