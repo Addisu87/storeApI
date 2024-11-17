@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 from pydantic import BaseModel, EmailStr
 
-from typing import Any
+from typing import Annotated
+
+from api.dependencies import CommonQueryParams
 
 
 router = APIRouter(prefix="", tags=["users"])
@@ -47,9 +49,9 @@ async def create_user(user_in: UserIn):
     return user_saved
 
 
-# @router.get("/users/", tags=["users"])
-# async def read_users():
-#     return [{"username": "Rick"}, {"username": "Morty"}]
+@router.get("/users/", tags=["users"])
+async def read_users(commons: CommonQueryParams):
+    return commons
 
 
 # @router.get("/users/me", tags=["users"])
