@@ -2,9 +2,19 @@
 # Reusable components for security in routes.
 
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, Cookie, Header, HTTPException
 
+from app.core.security import oauth2_scheme
+from app.services.user_service import fake_decode_token
+
 router = APIRouter()
+
+
+# Create a get_current_user dependency
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    user = fake_decode_token(token)
+    return user
 
 
 # Dependencies in path operation decorators-

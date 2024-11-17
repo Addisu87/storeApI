@@ -8,6 +8,7 @@ class UserBase(BaseModel):
     username: str
     email: EmailStr
     full_name: str | None = None
+    disabled: bool | None = None
 
 
 # Input model- Inheritance

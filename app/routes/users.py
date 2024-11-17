@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends
 from typing import Annotated
 
+from fastapi import APIRouter, Depends
+
 from app.dependencies.common_query import CommonQueryParams
-from app.services.user_service import fake_save_user
 from app.schemas.users import UserIn, UserOut
+from app.services.user_service import fake_save_user
+from app.dependencies.auth import get_current_user
 
 
 router = APIRouter(prefix="", tags=["users"])
@@ -27,9 +29,10 @@ async def read_users(commons: Annotated[dict, Depends(CommonQueryParams)]):
     return commons
 
 
-# @router.get("/users/me", tags=["users"])
-# async def read_user_me():
-#     return {"username": "fakecurrentuser"}
+# Inject the current user
+@router.get("/users/me", tags=["users"])
+async def read_users_me(current_user: Annotated[UserIn, Depends(get_current_user)]):
+    return current_user
 
 
 # @router.get("/users/{user_id}", tags=["users"])
