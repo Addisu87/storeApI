@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from typing import Annotated
 
 from app.dependencies.common_query import CommonQueryParams
 from app.services.user_service import fake_save_user
@@ -19,7 +20,7 @@ async def create_user(user_in: UserIn):
 
 
 @router.get("/users/", tags=["users"])
-async def read_users(commons: CommonQueryParams = Depends()):
+async def read_users(commons: Annotated[dict, Depends(CommonQueryParams)]):
     """
     Fetch users based on common query parameters.
     """

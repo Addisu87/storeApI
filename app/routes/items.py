@@ -180,7 +180,7 @@ async def create_item(item: Item):
 
 # Add dependencies to the path operation decorator
 # @router.get("/items/", response_model=list[Item])
-# async def read_items(commons: CommonQueryParams):
+# async def read_items(commons: Annotated[CommonQueryParams, Depends()]):
 #     response = {}
 #     if commons.q:
 #         response.update({"q", commons.q})
