@@ -54,6 +54,12 @@ which python
 fastapi dev main.py
 ```
 
+<!-- To generate a secure random secret key  -->
+
+```bash
+    openssl rand -hex 32
+```
+
 <!-- FastAPI CLI - Development mode -->
 
 ```bash
