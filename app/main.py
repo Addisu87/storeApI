@@ -3,8 +3,8 @@ from fastapi import FastAPI
 
 
 from .internal import admin
-from app.routes import users, items
-from app.auth import login
+from app.routers import users, items
+from app.routers.auth import login
 from app.static import static_files
 
 

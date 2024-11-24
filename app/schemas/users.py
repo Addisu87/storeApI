@@ -1,26 +1,17 @@
-# user-related Pydantic model
+# Pydantic models for user-related schemas
 
 from pydantic import BaseModel, EmailStr
 
 
 # Base user
-class UserBase(BaseModel):
+class User(BaseModel):
     username: str
     email: EmailStr
     full_name: str | None = None
     disabled: bool | None = None
 
 
-# Input model- Inheritance
-class UserIn(UserBase):
-    password: str
-
-
-# Output model
-class UserOut(UserBase):
-    pass
-
-
+# Inheritance
 # Database model - have a hashed password
-class UserInDB(UserBase):
+class UserInDB(User):
     hashed_password: str

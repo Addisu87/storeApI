@@ -1,4 +1,4 @@
-#
+# Pydantic models for item-related schemas
 from fastapi import (
     APIRouter,
     Query,

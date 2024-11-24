@@ -1,2 +1,1 @@
-# Authentication/authorization services
-# Business logic related to authentication and authorization.
+# Login, token validation logic

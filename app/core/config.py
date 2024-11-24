@@ -1,1 +1,1 @@
-# Configuration settings
+# Global app configuration settings
