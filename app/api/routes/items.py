@@ -19,7 +19,7 @@ from uuid import UUID
 #     query_or_cookie_extractor,
 # )
 
-from app.schemas.items import Image, Item, CarItem, PlaneItem
+from app.api.schemas.items import Image, Item, CarItem, PlaneItem
 from app.core.security import oauth2_scheme
 
 

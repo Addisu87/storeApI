@@ -8,9 +8,9 @@ from jwt.exceptions import InvalidTokenError
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.security import oauth2_scheme, SECRET_KEY, ALGORITHM
-from app.schemas.users import User
-from app.schemas.token import TokenData
-from app.services.user_services import get_user
+from app.api.schemas.users import User
+from app.api.schemas.token import TokenData
+from app.api.services.user_services import get_user
 
 router = APIRouter()
 

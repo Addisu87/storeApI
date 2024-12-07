@@ -22,18 +22,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-# Password hashing - Converting into a sequence of bytes(strings)
-# it looks like gibberish
-
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
-
-
 # Create access token
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
@@ -44,3 +32,15 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+# Password hashing - Converting into a sequence of bytes(strings)
+# it looks like gibberish
+
+
+def get_password_hash(password):
+    return pwd_context.hash(password)

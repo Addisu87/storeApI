@@ -8,17 +8,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 # Security
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.services.user_services import authenticate_user
+from app.api.services.user_services import authenticate_user
 from app.core.security import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
-from app.schemas.token import Token
-from app.core.dependencies import fake_users_db
+from app.api.schemas.token import Token
+from app.core.deps import fake_users_db
 
 
 router = APIRouter(prefix="", tags=["auth"])
 
 
 @router.post("/token")
-async def login_for_access_token(
+async def login_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
     user = authenticate_user(fake_users_db, form_data.username, form_data.password)

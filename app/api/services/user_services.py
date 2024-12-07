@@ -2,7 +2,7 @@
 # CRUD for users, business logic
 # Business logic related to authentication and authorization.
 
-from app.schemas.users import UserInDB
+from app.api.schemas.users import UserInDB
 from app.core.security import verify_password
 
 

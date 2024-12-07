@@ -4,8 +4,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.dependencies.common_query import CommonQueryParams
-from app.schemas.users import User
-from app.core.dependencies import get_current_active_user
+from app.api.schemas.users import User
+from app.core.deps import get_current_active_user
 
 
 router = APIRouter(prefix="", tags=["users"])
