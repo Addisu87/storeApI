@@ -29,13 +29,6 @@ async def read_users_me(
     return current_user
 
 
-@router.get("/users/me/items/")
-async def read_own_items(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-):
-    return [{"item_id": "Foo", "owner": current_user.username}]
-
-
-# @router.get("/users/{user_id}", tags=["users"])
-# async def read_user(user_id: int):
-#     return {"user_id": user_id}
+@router.get("/users/{user_id}", response_model=User)
+async def read_user(user_id: int):
+    return {"user_id": user_id}

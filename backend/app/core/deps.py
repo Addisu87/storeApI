@@ -6,11 +6,13 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlmodel import Session
 
 from app.core.security import oauth2_scheme, SECRET_KEY, ALGORITHM
 from app.api.schemas.users import User
 from app.api.schemas.token import TokenData
 from app.api.services.user_services import get_user
+from app.core.db import engine
 
 router = APIRouter()
 
@@ -25,8 +27,19 @@ fake_users_db = {
 }
 
 
+# Create a Session Dependency
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+
+# Use Annotated for Dependency Injection
+SessionDep = Annotated[Session, Depends(get_session)]
+TokenDep = Annotated[str, Depends(oauth2_scheme)]
+
+
 # Create a get_current_user dependency
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(token: TokenDep) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -46,11 +59,13 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     return user
 
 
-async def get_current_active_user(
-    current_user: Annotated[User, Depends(get_current_user)]
-):
+CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+async def get_current_active_user(current_user: CurrentUser) -> User:
     if current_user.disabled:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user doesn't have enough privileges",
         )
     return current_user

@@ -163,9 +163,9 @@ async def create_item(item: Item):
 
 
 # Get Current User
-@router.get("/items/")
-async def read_items(token: Annotated[str, Depends(oauth2_scheme)]):
-    return {"token": token}
+# @router.get("/items/")
+# async def read_items(token: Annotated[str, Depends(oauth2_scheme)]):
+#     return {"token": token}
 
 
 @router.get("/items/{item_id}", response_model=Item, response_model_exclude_unset=True)
@@ -189,12 +189,12 @@ async def read_items(
     }
 
 
-@router.put("/items/{item_id}", response_model=Item)
-def update_item(item_id: str, item: Item):
-    update_item_encoded = jsonable_encoder(item)
-    # fake_db[item_id] = update_item_encoded
-    items[item_id] = update_item_encoded
-    return update_item_encoded
+# @router.put("/items/{item_id}", response_model=Item)
+# def update_item(item_id: str, item: Item):
+#     update_item_encoded = jsonable_encoder(item)
+#     # fake_db[item_id] = update_item_encoded
+#     items[item_id] = update_item_encoded
+#     return update_item_encoded
 
 
 # @router.put("/items/{item_id}")
@@ -262,11 +262,11 @@ async def read_item_name(item_id: str):
     return items[item_id]
 
 
-@router.get(
-    "/items/{item_id}/public", response_model=Item, response_model_exclude=["tax"]
-)
-def read_item_public_data(item_id: str):
-    return items[item_id]
+# @router.get(
+#     "/items/{item_id}/public", response_model=Item, response_model_exclude=["tax"]
+# )
+# def read_item_public_data(item_id: str):
+#     return items[item_id]
 
 
 @router.post("/items/images/multiple")

@@ -34,6 +34,20 @@ echo "*" > .venv/.gitignore
 
 ```bash
 pip install -r requirements.txt
+
+```
+
+<!-- Working in dev mode -->
+
+```bash
+python3 -m pip install -e .
+
+python3 -m pip install -e . --no-deps
+
+```
+
+```bash
+python3 -m pip install build
 ```
 
 <!-- Run program -->
@@ -52,6 +66,8 @@ which python
 
 ```bash
 fastapi dev main.py
+
+uvicorn main:app --reload
 ```
 
 <!-- To generate a secure random secret key  -->
@@ -76,3 +92,63 @@ fastapi dev main.py
 ├─── static - static files like logo.png
 ├─── tables - Application tables definitions. a file for each table
 └─── utilities - Functions, classes to help with application development. Collections, Database wrappers, password hashers etc
+
+<!-- Install the Required Build Tool -->
+
+````bash
+    pip install hatch
+```
+
+<!-- Create and Activate a Virtual Environment -->
+
+```bash
+    python3 -m venv .venv
+```
+
+<!--
+Activate the Virtual Environment: -->
+<!-- macOS/Linux: -->
+
+```bash
+source .venv/bin/activate
+```
+
+<!-- Windows -->
+
+```bash
+    .venv\Scripts\activate
+```
+
+
+<!-- Install the Dependencies -->
+
+```bash
+    hatch env create
+```
+
+
+<!-- ctivate the Environment Managed by Hatch -->
+```bash
+    hatch shell
+```
+
+<!-- Run Your Application -->
+```bash
+    uvicorn app.main:app --reload
+```
+
+<!-- Install and activate the dev environment: -->
+```bash
+    hatch env create dev
+    hatch shell dev
+```
+
+
+ <!-- Verify Installation -->
+
+```bash
+ pip freeze
+
+```
+
+````

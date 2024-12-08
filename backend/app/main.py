@@ -4,6 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.main import api_router
 
+from app.core.db import create_db_and_tables
+
+
 # Initialize FastAPI application
 app = FastAPI(
     title="My FastAPI Application",
@@ -31,6 +34,18 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(api_router)
+
+
+# Create Database Tables on Startup
+@app.on_event("startup")
+async def on_startup():
+    create_db_and_tables()
+
+
+@app.on_event("shutdown")
+def shutdown_event():
+    with open("log.txt", mode="a") as log:
+        log.write("Application shutdown")
 
 
 # Root endpoint
