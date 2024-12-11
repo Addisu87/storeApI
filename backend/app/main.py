@@ -8,10 +8,20 @@ from app.core.db import create_db_and_tables
 
 
 # Initialize FastAPI application
+# Metadata for API
 app = FastAPI(
-    title="My FastAPI Application",
+    title="FastAPI Application",
     description="An example FastAPI application with CORS and routing.",
     version="1.0.0",
+    contact={
+        "name": "Addisu Haile",
+        "url": "https://portfolio-addisu-addisu87.vercel.app/",
+        "email": "addisuhaile87@gmail.com"
+    },
+    license_info={
+        "name": "Apache 2.0",
+        "identifier": "MIT",
+    },
 )
 
 

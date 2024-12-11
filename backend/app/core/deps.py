@@ -5,7 +5,7 @@ from typing import Annotated
 import jwt
 from jwt.exceptions import InvalidTokenError
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlmodel import Session
 
 from app.core.security import oauth2_scheme, SECRET_KEY, ALGORITHM
@@ -53,7 +53,7 @@ async def get_current_user(token: TokenDep) -> User:
         token_data = TokenData(username=username)
     except InvalidTokenError:
         raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)
+    user = get_user(fake_users_db, username=token_data.username) # type: ignore
     if user is None:
         raise credentials_exception
     return user
@@ -69,3 +69,13 @@ async def get_current_active_user(current_user: CurrentUser) -> User:
             detail="The user doesn't have enough privileges",
         )
     return current_user
+
+
+async def get_token_header(x_token: Annotated[str, Header()]):
+    if x_token != "fake-super-secret-token":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Token header invalid")
+    
+    
+async def get_query_token(token: str):
+    if token != "jessica":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No Jessica token provided")
