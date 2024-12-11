@@ -66,14 +66,16 @@ which python
 
 ```bash
 fastapi dev main.py
-
-uvicorn main:app --reload
 ```
 
 <!-- To generate a secure random secret key  -->
 
 ```bash
     openssl rand -hex 32
+```
+
+```bash
+    pytest
 ```
 
 <!-- FastAPI CLI - Development mode -->
@@ -93,12 +95,6 @@ uvicorn main:app --reload
 ├─── tables - Application tables definitions. a file for each table
 └─── utilities - Functions, classes to help with application development. Collections, Database wrappers, password hashers etc
 
-<!-- Install the Required Build Tool -->
-
-````bash
-    pip install hatch
-```
-
 <!-- Create and Activate a Virtual Environment -->
 
 ```bash
@@ -110,7 +106,7 @@ Activate the Virtual Environment: -->
 <!-- macOS/Linux: -->
 
 ```bash
-source .venv/bin/activate
+    source .venv/bin/activate
 ```
 
 <!-- Windows -->
@@ -119,36 +115,35 @@ source .venv/bin/activate
     .venv\Scripts\activate
 ```
 
-
 <!-- Install the Dependencies -->
 
 ```bash
     hatch env create
 ```
 
+<!-- Activate the Environment Managed by Hatch -->
 
-<!-- ctivate the Environment Managed by Hatch -->
 ```bash
     hatch shell
 ```
 
 <!-- Run Your Application -->
+
 ```bash
     uvicorn app.main:app --reload
+    or
+    uvicorn main:app --reload
 ```
 
 <!-- Install and activate the dev environment: -->
+
 ```bash
     hatch env create dev
     hatch shell dev
 ```
 
-
  <!-- Verify Installation -->
 
 ```bash
- pip freeze
-
+    pip freeze
 ```
-
-````
