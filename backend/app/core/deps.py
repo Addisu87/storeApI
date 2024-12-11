@@ -1,5 +1,9 @@
 # Authentication/authorization dependencies
 # Reusable components for security in routes.
+# dependencies injection/resources/providers/services/injectables/components
+# Have shared logic (the same code logic again and again).
+# Share database connections.
+# Enforce security, authentication, role requirements, etc.
 
 from typing import Annotated
 import jwt
@@ -53,7 +57,7 @@ async def get_current_user(token: TokenDep) -> User:
         token_data = TokenData(username=username)
     except InvalidTokenError:
         raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username) # type: ignore
+    user = get_user(fake_users_db, username=token_data.username)  # type: ignore
     if user is None:
         raise credentials_exception
     return user
@@ -73,9 +77,13 @@ async def get_current_active_user(current_user: CurrentUser) -> User:
 
 async def get_token_header(x_token: Annotated[str, Header()]):
     if x_token != "fake-super-secret-token":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Token header invalid")
-    
-    
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="X-Token header invalid"
+        )
+
+
 async def get_query_token(token: str):
     if token != "jessica":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No Jessica token provided")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No Jessica token provided"
+        )

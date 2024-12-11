@@ -3,7 +3,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from app.dependencies.common_query import CommonQueryParams
 from app.api.schemas.users import User
 from app.core.deps import get_current_active_user
 
@@ -12,11 +11,11 @@ router = APIRouter(prefix="", tags=["users"])
 
 
 @router.get("/users/", tags=["users"])
-async def read_users(commons: Annotated[dict, Depends(CommonQueryParams)]):
+async def read_users(users: User, response_model=User):
     """
     Fetch users based on common query parameters.
     """
-    return commons
+    return users
 
 
 # Inject the current user - get the user
