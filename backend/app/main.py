@@ -1,13 +1,10 @@
 # Application entry point
 from fastapi import FastAPI
-
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 
-from fastapi.middleware.cors import CORSMiddleware
 from app.api.main import api_router
-
 from app.core.db import create_db_and_tables
-
 
 # Initialize FastAPI application
 # Metadata for API

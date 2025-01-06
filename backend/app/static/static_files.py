@@ -1,9 +1,8 @@
 from typing import Annotated
 
-from fastapi import APIRouter, File, UploadFile, Form
+from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-
 
 router = APIRouter(prefix="", tags=["files"])
 
@@ -28,7 +27,9 @@ async def create_file(
 # upload files from fastapi
 @router.post("/uploadfile")
 async def create_upload_file(
-    files: Annotated[list[UploadFile], File(description="Multiple files as UploadFile")]
+    files: Annotated[
+        list[UploadFile], File(description="Multiple files as UploadFile")
+    ],
 ):
     return {"filename": [file.filename for file in files]}
 

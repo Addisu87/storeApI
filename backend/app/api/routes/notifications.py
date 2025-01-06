@@ -1,6 +1,5 @@
-from fastapi import APIRouter, BackgroundTasks
 from app.external_services.notifications import write_notification
-
+from fastapi import APIRouter, BackgroundTasks
 
 router = APIRouter()
 
