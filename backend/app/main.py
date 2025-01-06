@@ -1,6 +1,8 @@
 # Application entry point
 from fastapi import FastAPI
 
+from fastapi.responses import PlainTextResponse
+
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.main import api_router
 
@@ -16,7 +18,7 @@ app = FastAPI(
     contact={
         "name": "Addisu Haile",
         "url": "https://portfolio-addisu-addisu87.vercel.app/",
-        "email": "addisuhaile87@gmail.com"
+        "email": "addisuhaile87@gmail.com",
     },
     license_info={
         "name": "Apache 2.0",
@@ -59,8 +61,8 @@ def shutdown_event():
 
 
 # Root endpoint
-@app.get("/")
-async def root():
+@app.get("/", response_class=PlainTextResponse)
+async def main():
     """
     Root endpoint providing a simple health check or welcome message.
     """

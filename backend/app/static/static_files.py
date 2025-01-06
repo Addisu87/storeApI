@@ -2,9 +2,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, UploadFile, Form
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 
 router = APIRouter(prefix="", tags=["files"])
+
+
+router.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 # Use File, bytes, and UploadFile to declare files to be uploaded in the request, sent as form data.

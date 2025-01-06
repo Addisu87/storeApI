@@ -74,6 +74,8 @@ fastapi dev main.py
     openssl rand -hex 32
 ```
 
+<!-- Testing -->
+
 ```bash
     pytest
 ```
