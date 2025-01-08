@@ -1,10 +1,26 @@
-# Application entry point
-from fastapi import FastAPI
+from contextlib import asynccontextmanager  # noqa: D100
+from functools import lru_cache
+from typing import Annotated
+
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse
+from fastapi.websockets import WebSocket
 
 from app.api.main import api_router
+from app.core.config import Settings
 from app.core.db import create_db_and_tables
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):  # noqa: D103
+    # Startup logic
+    create_db_and_tables()
+    yield  # Application runs here
+    # Shutdown logic
+    with open("log.txt", mode="a") as log:
+        log.write("Application shutdown\n")
+
 
 # Initialize FastAPI application
 # Metadata for API
@@ -21,6 +37,7 @@ app = FastAPI(
         "name": "Apache 2.0",
         "identifier": "MIT",
     },
+    lifespan=lifespan,
 )
 
 
@@ -45,22 +62,30 @@ app.add_middleware(
 app.include_router(api_router)
 
 
-# Create Database Tables on Startup
-@app.on_event("startup")
-async def on_startup():
-    create_db_and_tables()
-
-
-@app.on_event("shutdown")
-def shutdown_event():
-    with open("log.txt", mode="a") as log:
-        log.write("Application shutdown")
+# instead of computing it again,
+# executing the code of the function every time
+@lru_cache
+def get_settings():  # noqa: D103
+    return Settings()  # type: ignore
 
 
 # Root endpoint
-@app.get("/", response_class=PlainTextResponse)
-async def main():
-    """
-    Root endpoint providing a simple health check or welcome message.
-    """
-    return {"message": "Hello Bigger Applications!"}
+@app.get("/", response_class=JSONResponse)
+async def main():  # noqa: D103
+    return {"msg": "Hello Bigger Applications!"}
+
+
+@app.get("/info")
+async def info(settings: Annotated[Settings, Depends(get_settings)]):  # noqa: D103
+    return {
+        "project_name": settings.project_name,
+        "admin_email": settings.admin_email,
+        "items_per_user": settings.items_per_user,
+    }
+
+
+@app.websocket("/ws")
+async def websocket(websocket: WebSocket):  # noqa: D103
+    await websocket.accept()
+    await websocket.send_json({"msg": "Hello WebSocket"})
+    await websocket.close()

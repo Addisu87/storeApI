@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Details</title>
+    <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet"/>
+</head>
+<body>
+    <h1>
+        <a href="{{ url_for('read_item', id=item_id) }}">
+            Item Id: {{ item_id }}
+        </a>
+    </h1>
+</body>
+</html>
