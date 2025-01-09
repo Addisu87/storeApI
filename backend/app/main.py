@@ -2,14 +2,14 @@ from contextlib import asynccontextmanager  # noqa: D100
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import Depends, FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.websockets import WebSocket
-
 from app.api.main import api_router
 from app.core.config import Settings
 from app.core.db import create_db_and_tables
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.websockets import WebSocket
 
 
 @asynccontextmanager
@@ -39,6 +39,8 @@ app = FastAPI(
     },
     lifespan=lifespan,
 )
+
+app.mount("/static", StaticFiles(directory="app/static"), name="files")
 
 
 # CORS settings
@@ -88,4 +90,5 @@ async def info(settings: Annotated[Settings, Depends(get_settings)]):  # noqa: D
 async def websocket(websocket: WebSocket):  # noqa: D103
     await websocket.accept()
     await websocket.send_json({"msg": "Hello WebSocket"})
+    await websocket.close()
     await websocket.close()

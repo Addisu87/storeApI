@@ -1,12 +1,12 @@
 # Routes for item operations
-from typing import Annotated, Union
+from typing import Annotated
 
 from app.api.schemas.items import Item
 from app.core.deps import get_token_header
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse, UJSONResponse
-from fastapi.staticfiles import StaticFiles
+
 from fastapi.templating import Jinja2Templates
 
 # from app.routers.users import User
@@ -40,7 +40,7 @@ responses = {
     403: {"description": "Not enough privileges"},
 }
 
-router.mount("/static", StaticFiles(directory="static"), name="static")
+
 templates = Jinja2Templates(directory="templates")
 
 
@@ -51,9 +51,7 @@ templates = Jinja2Templates(directory="templates")
     status_code=status.HTTP_201_CREATED,
 )
 async def create_item(item: Item):
-    """
-    Create an item with all the information:
-
+    """Create an item with all the information:
     - **title**: each item must have a title
     - **description**: a long description
     - **price**: required
@@ -61,7 +59,7 @@ async def create_item(item: Item):
     - **tags**: a set of unique tag strings for this item
     \f
     :param item: User input.
-    """
+    """  # noqa: D400
     # Additional status code
     # return JSONResponse(status_code=status.HTTP_201_CREATED, content=Item)
     return item
@@ -79,7 +77,7 @@ async def read_items():
     response_model=Item,
     responses={**responses, 200: {"content": {"image/png": {}}}},
 )
-async def read_item(request: Request, item_id: str, img: Union[bool, None] = None):
+async def read_item(request: Request, item_id: str, img: bool | None = None):
     if item_id not in fake_items_db:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"

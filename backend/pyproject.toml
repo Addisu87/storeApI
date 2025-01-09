@@ -12,8 +12,6 @@ authors = [
 maintainers = [
   {name = "Brett Cannon", email = "brett@example.com"}
 ]
-license = "MIT"
-readme = "README.md"
 keywords = ["fastapi", "python", "web", "api"]
 dependencies = [
     "fastapi[standard]<1.0.0,>=0.115.6",
@@ -49,4 +47,7 @@ Repository = "https://github.com/your_username/my_project"
 Changelog = "https://github.com/your_username/my_project/blob/main/CHANGELOG.md"
 
 [project.scripts]
-my_project-cli = "my_project.cli:main"
+app-cli = "app.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
