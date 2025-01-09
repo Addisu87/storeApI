@@ -34,7 +34,6 @@ echo "*" > .venv/.gitignore
 
 ```bash
 pip install -r requirements.txt
-
 ```
 
 <!-- Working in dev mode -->
@@ -158,6 +157,8 @@ Activate the Virtual Environment: -->
 
 ```bash
 pip install .
+pip install -e .
+python -m pip install .
 ```
 
 <!-- To install optional development dependencies (such as testing tools), use: -->
