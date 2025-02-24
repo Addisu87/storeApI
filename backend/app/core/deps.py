@@ -8,6 +8,8 @@
 from typing import Annotated
 
 import jwt
+
+from backend.app.database.base import engine, fake_users_db
 from fastapi import APIRouter, Depends, Header, HTTPException, Security, status
 from fastapi.security import SecurityScopes
 from jwt.exceptions import InvalidTokenError
@@ -17,7 +19,6 @@ from sqlmodel import Session
 from app.api.schemas.token import TokenData
 from app.api.schemas.users import User
 from app.api.services.user_services import get_user
-from app.core.db import engine, fake_users_db
 from app.core.security import ALGORITHM, SECRET_KEY, oauth2_scheme
 
 router = APIRouter()
@@ -25,6 +26,12 @@ router = APIRouter()
 
 # Create a Session Dependency
 def get_session():
+    """Provide a database session for use in a context manager.
+
+    Yields:
+        Session: A SQLAlchemy session object.
+
+    """
     with Session(engine) as session:
         yield session
 
@@ -36,6 +43,19 @@ TokenDep = Annotated[str, Depends(oauth2_scheme)]
 
 # Create a get_current_user dependency
 async def get_current_user(security_scopes: SecurityScopes, token: TokenDep) -> User:
+    """Retrieve the current user based on the provided security scopes and token.
+
+    Args:
+        security_scopes (SecurityScopes): The security scopes required for the user.
+        token (TokenDep): The JWT token used for authentication.
+
+    Returns:
+        User: The authenticated user.
+
+    Raises:
+        HTTPException: If the credentials are invalid or the user does not have the required permissions.
+
+    """
     if security_scopes.scopes:
         authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
     else:
@@ -71,6 +91,18 @@ CurrentUser = Annotated[User, Security(get_current_user, scopes=["me"])]
 
 
 async def get_current_active_user(current_user: CurrentUser) -> User:
+    """Retrieve the current active user.
+
+    Args:
+        current_user (CurrentUser): The current user object.
+
+    Returns:
+        User: The current active user object.
+
+    Raises:
+        HTTPException: If the current user is disabled.
+
+    """
     if current_user.disabled:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

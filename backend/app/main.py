@@ -4,7 +4,7 @@ from typing import Annotated
 
 from app.api.main import api_router
 from app.core.config import Settings
-from app.core.db import create_db_and_tables
+from backend.app.database.db import create_db_and_tables
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
