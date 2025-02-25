@@ -5,33 +5,29 @@
 # Share database connections.
 # Enforce security, authentication, role requirements, etc.
 
+from collections.abc import Generator
 from typing import Annotated
 
 import jwt
 from core.config import settings
-from fastapi import APIRouter, Depends, Header, HTTPException, Security, status
-from fastapi.security import OAuth2PasswordBearer, SecurityScopes
+from fastapi import Depends, HTTPException, Security, status
+from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 from sqlmodel import Session
 
-from app.core.security import ALGORITHM
 from app.database.db import engine
 from app.schemas.token import TokenPayload
 from app.schemas.users import User
-from app.services.user_services import get_user
-
-router = APIRouter()
-
 
 # Declaring OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="token",
+    tokenUrl=f"{settings.API_V1_STR}/login/access-token",
 )
 
 
 # Create a Session Dependency
-def get_session():
+def get_db() -> Generator[Session, None, None]:
     """Provide a database session for use in a context manager.
 
     Yields:
@@ -43,61 +39,45 @@ def get_session():
 
 
 # Use Annotated for Dependency Injection
-SessionDep = Annotated[Session, Depends(get_session)]
+SessionDep = Annotated[Session, Depends(get_db)]
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
 
 
 # Create a get_current_user dependency
-async def get_current_user(security_scopes: SecurityScopes, token: TokenDep) -> User:
-    """Retrieve the current user based on the provided security scopes and token.
+async def get_current_user(session: SessionDep, token: TokenDep) -> User:
+    """Retrieve the current user from the database."""
 
-    Args:
-        security_scopes (SecurityScopes): The security scopes required for the user.
-        token (TokenDep): The JWT token used for authentication.
-
-    Returns:
-        User: The authenticated user.
-
-    Raises:
-        HTTPException: If the credentials are invalid or the user does not have the required permissions.
-
-    """
-    if security_scopes.scopes:
-        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
-    else:
-        authenticate_value = "Bearer"
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": authenticate_value},
-    )
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_scopes = payload.get("scopes", [])
-        token_data = TokenPayload(scopes=token_scopes, username=username)
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        token_data = TokenPayload(**payload)
     except (InvalidTokenError, ValidationError):
-        raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)  # type: ignore
-    if user is None:
-        raise credentials_exception
-    for scope in security_scopes.scopes:
-        if scope not in token_data.scopes:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not enough permissions",
-                headers={"WWW-Authenticate": authenticate_value},
-            )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+
+    user = session.get(User, token_data.sub)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Inactive user",
+        )
     return user
 
 
-CurrentUser = Annotated[User, Security(get_current_user, scopes=["me"])]
+CurrentUser = Annotated[User, Security(get_current_user)]
 
 
-async def get_current_active_user(current_user: CurrentUser) -> User:
-    """Retrieve the current active user.
+async def get_current_active_superuser(current_user: CurrentUser) -> User:
+    """Retrieve the current active superuser.
 
     Args:
         current_user (CurrentUser): The current user object.
@@ -106,26 +86,12 @@ async def get_current_active_user(current_user: CurrentUser) -> User:
         User: The current active user object.
 
     Raises:
-        HTTPException: If the current user is disabled.
+        HTTPException: If the current user is not a superuser.
 
     """
-    if current_user.disabled:
+    if not current_user.is_superuser:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user doesn't have enough privileges",
         )
     return current_user
-
-
-async def get_token_header(x_token: Annotated[str, Header()]):
-    if x_token != "fake-super-secret-token":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="X-Token header invalid"
-        )
-
-
-async def get_query_token(token: str):
-    if token != "jessica":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="No Jessica token provided"
-        )

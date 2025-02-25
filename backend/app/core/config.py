@@ -16,6 +16,7 @@ class BaseConfig(BaseSettings):
 class Settings(BaseConfig):
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
+    ALGORITHM: str = "HS256"
     # 60 minutes * 24 hours * 7 days = 7 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
 
