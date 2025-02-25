@@ -1,21 +1,19 @@
 from contextlib import asynccontextmanager  # noqa: D100
 from functools import lru_cache
-from typing import Annotated
 
-from app.api.main import api_router
-from app.core.config import Settings
-from backend.app.database.db import create_db_and_tables
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.websockets import WebSocket
 
+from app.api.main import api_router
+from app.core.config import Settings
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa: D103
     # Startup logic
-    create_db_and_tables()
     yield  # Application runs here
     # Shutdown logic
     with open("log.txt", mode="a") as log:
@@ -75,15 +73,6 @@ def get_settings():  # noqa: D103
 @app.get("/", response_class=JSONResponse)
 async def main():  # noqa: D103
     return {"msg": "Hello Bigger Applications!"}
-
-
-@app.get("/info")
-async def info(settings: Annotated[Settings, Depends(get_settings)]):  # noqa: D103
-    return {
-        "project_name": settings.project_name,
-        "admin_email": settings.admin_email,
-        "items_per_user": settings.items_per_user,
-    }
 
 
 @app.websocket("/ws")

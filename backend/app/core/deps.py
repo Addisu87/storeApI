@@ -8,10 +8,9 @@
 from typing import Annotated
 
 import jwt
-
-from backend.app.database.base import engine, fake_users_db
+from core.config import settings
 from fastapi import APIRouter, Depends, Header, HTTPException, Security, status
-from fastapi.security import SecurityScopes
+from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 from sqlmodel import Session
@@ -19,9 +18,16 @@ from sqlmodel import Session
 from app.api.schemas.token import TokenData
 from app.api.schemas.users import User
 from app.api.services.user_services import get_user
-from app.core.security import ALGORITHM, SECRET_KEY, oauth2_scheme
+from app.core.security import ALGORITHM
+from backend.app.database.base import engine, fake_users_db
 
 router = APIRouter()
+
+
+# Declaring OAuth2 scheme
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="token",
+)
 
 
 # Create a Session Dependency
@@ -66,7 +72,7 @@ async def get_current_user(security_scopes: SecurityScopes, token: TokenDep) -> 
         headers={"WWW-Authenticate": authenticate_value},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
