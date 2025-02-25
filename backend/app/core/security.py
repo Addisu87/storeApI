@@ -25,18 +25,6 @@ oauth2_scheme = OAuth2PasswordBearer(
 )
 
 
-def verify_password(plain_password, hashed_password) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-# Password hashing - Converting into a sequence of bytes(strings)
-# it looks like gibberish
-
-
-def get_password_hash(password) -> str:
-    return pwd_context.hash(password)
-
-
 # Create access token
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
@@ -47,3 +35,15 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+# Password hashing - Converting into a sequence of bytes(strings)
+# it looks like gibberish
+
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
