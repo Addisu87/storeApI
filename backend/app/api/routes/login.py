@@ -23,7 +23,9 @@ async def login_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     session: Annotated[Session, Depends(get_db)],
 ) -> Token:
-    """OAuth2 compatible token login, get an access token for future requests."""
+    """
+    OAuth2 compatible token login, get an access token for future requests.
+    """
     user = authenticate_user(
         session=session, email=form_data.username, password=form_data.password
     )
