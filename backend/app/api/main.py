@@ -1,9 +1,9 @@
 # Application entry point
-from app.api.internal import admin
-from app.api.routes import heroes, items, notifications, users
-from app.api.routes.auth import login
-from app.static import files
 from fastapi import APIRouter
+
+from app.api.internal import admin
+from app.api.routes import heroes, items, login, notifications, users
+from app.static import files
 
 api_router = APIRouter()
 
