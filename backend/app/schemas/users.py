@@ -50,6 +50,7 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default=None, primary_key=True)
     hashed_password: str
+    # relationship attribute
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
 
 

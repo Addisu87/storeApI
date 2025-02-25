@@ -15,11 +15,11 @@ from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 from sqlmodel import Session
 
-from app.api.schemas.token import TokenData
-from app.api.schemas.users import User
-from app.api.services.user_services import get_user
 from app.core.security import ALGORITHM
-from backend.app.database.base import engine, fake_users_db
+from app.database.db import engine
+from app.schemas.token import TokenPayload
+from app.schemas.users import User
+from app.services.user_services import get_user
 
 router = APIRouter()
 
@@ -77,7 +77,7 @@ async def get_current_user(security_scopes: SecurityScopes, token: TokenDep) -> 
         if username is None:
             raise credentials_exception
         token_scopes = payload.get("scopes", [])
-        token_data = TokenData(scopes=token_scopes, username=username)
+        token_data = TokenPayload(scopes=token_scopes, username=username)
     except (InvalidTokenError, ValidationError):
         raise credentials_exception
     user = get_user(fake_users_db, username=token_data.username)  # type: ignore
