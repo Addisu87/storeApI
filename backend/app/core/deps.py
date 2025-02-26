@@ -9,13 +9,13 @@ from collections.abc import Generator
 from typing import Annotated
 
 import jwt
-from core.config import settings
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 from sqlmodel import Session
 
+from app.core.config import settings
 from app.database.db import engine
 from app.schemas.token import TokenPayload
 from app.schemas.users import User

@@ -4,6 +4,7 @@ import uuid
 
 from sqlmodel import Field, Relationship, SQLModel
 
+# Import User here to avoid circular import
 from app.schemas.users import User
 
 
@@ -30,6 +31,7 @@ class Item(ItemBase, table=True):
     owner_id: uuid.UUID = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
+
     owner: User | None = Relationship(back_populates="items")  # relationship attribute
 
 

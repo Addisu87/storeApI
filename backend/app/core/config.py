@@ -24,13 +24,13 @@ class Settings(BaseConfig):
     ADMIN_PASSWORD: str | None = None
     FRONTEND_HOST: str = "http://localhost:5173"
 
-    PROJECT_NAME: str
+    PROJECT_NAME: str | None = None
     SENTRY_DSN: HttpUrl | None = None
-    POSTGRES_SERVER: str
+    POSTGRES_SERVER: str | None = None
     POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str = ""
-    POSTGRES_DB: str = ""
+    POSTGRES_USER: str | None = None
+    POSTGRES_PASSWORD: str | None = None
+    POSTGRES_DB: str | None = None
 
     @computed_field
     @property

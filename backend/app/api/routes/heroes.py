@@ -1,10 +1,11 @@
 # Routes for hero operations
 from typing import Annotated
 
-from app.api.schemas.heroes import Hero, HeroCreate, HeroPublic, HeroUpdate
-from app.core.deps import SessionDep
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlmodel import select
+
+from app.core.deps import SessionDep
+from app.schemas.heroes import Hero, HeroCreate, HeroPublic, HeroUpdate
 
 router = APIRouter(prefix="", tags=["heroes"])
 

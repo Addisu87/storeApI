@@ -22,21 +22,7 @@ async def lifespan(app: FastAPI):  # noqa: D103
 
 # Initialize FastAPI application
 # Metadata for API
-app = FastAPI(
-    title="FastAPI Application",
-    description="An example FastAPI application with CORS and routing.",
-    version="1.0.0",
-    contact={
-        "name": "Addisu Haile",
-        "url": "https://portfolio-addisu-addisu87.vercel.app/",
-        "email": "addisuhaile87@gmail.com",
-    },
-    license_info={
-        "name": "Apache 2.0",
-        "identifier": "MIT",
-    },
-    lifespan=lifespan,
-)
+app = FastAPI(lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="files")
 
