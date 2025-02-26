@@ -1,15 +1,23 @@
 import secrets
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import HttpUrl, PostgresDsn, computed_field
+from pydantic import AnyUrl, BeforeValidator, HttpUrl, PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def parse_cors(value: Any) -> list[str] | str:
+    if isinstance(value, str) and not value.startswith("["):
+        return [i.strip() for i in value.split(",")]
+    elif isinstance(value, list | str):
+        return value
+    raise ValueError(value)
 
 
 class BaseConfig(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    ENV_STATE: Literal["dev", "prod", "test"] = "dev"
+    ENV_STATE: Literal["dev", "staging", "production"] = "dev"
 
 
 class Settings(BaseConfig):
@@ -22,6 +30,16 @@ class Settings(BaseConfig):
     ADMIN_EMAIL: str | None = None
     ADMIN_PASSWORD: str | None = None
     FRONTEND_HOST: str = "http://localhost:5173"
+
+    # CORS settings
+    BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl], str, BeforeValidator(parse_cors)] = []
+
+    @computed_field
+    @property
+    def all_cors_origins(self) -> list[str]:
+        return [str(origin) for origin in self.BACKEND_CORS_ORIGINS] + [
+            self.FRONTEND_HOST
+        ]
 
     PROJECT_NAME: str | None = None
     SENTRY_DSN: HttpUrl | None = None

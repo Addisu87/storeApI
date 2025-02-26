@@ -13,6 +13,7 @@ engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URL))
 
 def init_db(session: Session) -> None:
     SQLModel.metadata.create_all(engine)
+
     user = session.exec(select(User).where(User.email == settings.ADMIN_EMAIL)).first()
     logger.debug(
         f"Fetching user with email: {settings.ADMIN_EMAIL}, found user: {user}"
