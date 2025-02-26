@@ -2,8 +2,7 @@ import secrets
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import HttpUrl, computed_field
-from pydantic_core import MultiHostUrl
+from pydantic import HttpUrl, PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,7 +25,7 @@ class Settings(BaseConfig):
 
     PROJECT_NAME: str | None = None
     SENTRY_DSN: HttpUrl | None = None
-    POSTGRES_SERVER: str | None = None
+    POSTGRES_SERVER: str = "localhost"
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str | None = None
     POSTGRES_PASSWORD: str | None = None
@@ -34,9 +33,11 @@ class Settings(BaseConfig):
 
     @computed_field
     @property
-    def SQLALCHEMY_DATABASE_URI(self) -> MultiHostUrl:
-        return MultiHostUrl.build(
-            scheme="postgresql+psycopg",
+    def SQLALCHEMY_DATABASE_URL(self) -> PostgresDsn:
+        if not self.POSTGRES_SERVER:
+            raise ValueError("POSTGRES_SERVER is not set")
+        return PostgresDsn.build(
+            scheme="postgresql+psycopg2",
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PASSWORD,
             host=self.POSTGRES_SERVER,

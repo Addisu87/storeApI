@@ -1,12 +1,13 @@
 # Pydantic models for user-related schemas
 
 import uuid
+from typing import TYPE_CHECKING
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
-# Import Item here to avoid circular import
-from app.schemas.items import Item
+if TYPE_CHECKING:
+    from app.schemas.items import Item
 
 
 # Base user

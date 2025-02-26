@@ -5,8 +5,10 @@ from app.core.logging_config import logger
 from app.schemas.users import User, UserCreate
 from app.services import user_services
 
+print(settings.SQLALCHEMY_DATABASE_URL)
+
 # Create an Engine
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
+engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URL))
 
 
 def init_db(session: Session) -> None:

@@ -1,11 +1,13 @@
 # Pydantic models for item-related schemas
 # Data validation, Data serialization, Data documentation
+
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
 
-# Import User here to avoid circular import
-from app.schemas.users import User
+if TYPE_CHECKING:
+    from app.schemas.users import User
 
 
 # Shared properties
@@ -32,7 +34,7 @@ class Item(ItemBase, table=True):
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
 
-    owner: User | None = Relationship(back_populates="items")  # relationship attribute
+    owner: User | None = Relationship(back_populates="items")
 
 
 # Properties to return via API, id is always required
