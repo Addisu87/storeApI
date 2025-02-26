@@ -1,4 +1,5 @@
 # Pydantic models for user-related schemas
+from __future__ import annotations
 
 import uuid
 from typing import TYPE_CHECKING

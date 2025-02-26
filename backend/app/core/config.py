@@ -41,13 +41,13 @@ class Settings(BaseConfig):
             self.FRONTEND_HOST
         ]
 
-    PROJECT_NAME: str | None = None
+    PROJECT_NAME: str = "Full Stack FastAPI Project"
     SENTRY_DSN: HttpUrl | None = None
-    POSTGRES_SERVER: str = "localhost"
+    POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str | None = None
-    POSTGRES_PASSWORD: str | None = None
-    POSTGRES_DB: str | None = None
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
 
     @computed_field
     @property
@@ -60,7 +60,7 @@ class Settings(BaseConfig):
             password=self.POSTGRES_PASSWORD,
             host=self.POSTGRES_SERVER,
             port=self.POSTGRES_PORT,
-            path=self.POSTGRES_DB,
+            path=f"/{self.POSTGRES_DB}",
         )
 
 
