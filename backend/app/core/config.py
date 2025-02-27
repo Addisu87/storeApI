@@ -49,17 +49,6 @@ class Settings(BaseConfig):
     @computed_field
     @property
     def SQLALCHEMY_DATABASE_URL(self) -> PostgresDsn:
-        if not all(
-            [
-                self.POSTGRES_SERVER,
-                self.POSTGRES_USER,
-                self.POSTGRES_PASSWORD,
-                self.POSTGRES_DB,
-            ]
-        ):
-            raise ValueError(
-                "All POSTGRES_* fields must be set for SQLALCHEMY_DATABASE_URL"
-            )
         return PostgresDsn.build(
             scheme="postgresql+psycopg",
             username=self.POSTGRES_USER,
