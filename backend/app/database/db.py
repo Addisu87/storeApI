@@ -1,15 +1,15 @@
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Session, create_engine, select
 
 from app.core.config import settings
 from app.core.logging_config import logger
-from app.models.users import User, UserCreate
+from app.models.schemas import User, UserCreate
 from app.services import user_services
 
 # Create an Engine
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
 
-# make sure all SQLModel models are imported (app.) before initializing DB
+# make sure all SQLModel models are imported (app.models.schemas) before initializing DB
 # otherwise, SQLModel might fail to initialize relationships properly
 
 
@@ -19,8 +19,8 @@ def init_db(session: Session) -> None:
     # the tables un-commenting the next lines
     # from sqlmodel import SQLModel
 
-    # This works because the models are already imported and registered from app.models
-    SQLModel.metadata.create_all(engine)
+    # This works because the models are already imported and registered from app.models.schemas
+    # SQLModel.metadata.create_all(engine)
 
     user = session.exec(select(User).where(User.email == settings.ADMIN_EMAIL)).first()
     logger.debug(

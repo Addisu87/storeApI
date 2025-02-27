@@ -8,6 +8,7 @@ from app.core.config import settings
 # Metadata for API
 app = FastAPI(title=settings.PROJECT_NAME)
 
+
 # Add CORS middleware
 # This will allow the frontend to make requests to the backend.
 if settings.all_cors_origins:
