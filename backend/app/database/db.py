@@ -5,10 +5,8 @@ from app.core.logging_config import logger
 from app.models.users import User, UserCreate
 from app.services import user_services
 
-print(settings.SQLALCHEMY_DATABASE_URL)
-
 # Create an Engine
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URL))
+engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
 
 # make sure all SQLModel models are imported (app.) before initializing DB

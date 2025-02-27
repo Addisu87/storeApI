@@ -22,3 +22,8 @@ if settings.all_cors_origins:
 
 # Include API routes
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+
+@app.get("/")
+def root():
+    return {"message": "Welcome to the Full Stack FastAPI Project"}
