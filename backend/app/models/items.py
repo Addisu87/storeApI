@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
-    from app.schemas.users import User
+    from app.models.users import User
 
 
 # Shared properties

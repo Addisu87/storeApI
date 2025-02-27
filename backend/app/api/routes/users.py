@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlmodel import select
 
 from app.core.deps import SessionDep
-from app.schemas.users import User, UserCreate, UserPublic, UserUpdate
+from app.models.users import User, UserCreate, UserPublic, UserUpdate
 
 router = APIRouter(prefix="", tags=["users"])
 

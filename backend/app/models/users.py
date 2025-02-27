@@ -8,7 +8,7 @@ from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
-    from app.schemas.items import Item
+    from app.models.items import Item
 
 
 # Base user

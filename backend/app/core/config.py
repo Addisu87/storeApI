@@ -61,7 +61,7 @@ class Settings(BaseConfig):
                 "All POSTGRES_* fields must be set for SQLALCHEMY_DATABASE_URL"
             )
         return PostgresDsn.build(
-            scheme="postgresql+psycopg2",
+            scheme="postgresql+psycopg",
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PASSWORD,
             host=self.POSTGRES_SERVER,

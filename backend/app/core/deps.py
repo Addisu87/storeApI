@@ -17,8 +17,8 @@ from sqlmodel import Session
 
 from app.core.config import settings
 from app.database.db import engine
-from app.schemas.token import TokenPayload
-from app.schemas.users import User
+from app.models.token import TokenPayload
+from app.models.users import User
 
 # Declaring OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(

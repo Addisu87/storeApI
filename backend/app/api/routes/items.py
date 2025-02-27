@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlmodel import select
 
 from app.core.deps import SessionDep
-from app.schemas.items import Item, ItemCreate, ItemPublic, ItemUpdate
+from app.models.items import Item, ItemCreate, ItemPublic, ItemUpdate
 
 router = APIRouter(prefix="", tags=["items"])
 
