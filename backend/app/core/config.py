@@ -59,6 +59,8 @@ class Settings(BaseConfig):
             path=self.POSTGRES_DB,
         )
 
+    EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
+
 
 class DevConfig(Settings):
     model_config = SettingsConfigDict(env_prefix="DEV_", extra="ignore")
