@@ -40,6 +40,7 @@ class Settings(BaseConfig):
 
     PROJECT_NAME: str = "Full Stack FastAPI Project"
     SENTRY_DSN: HttpUrl | None = None
+    LOGTAIL_API_KEY: str | None = None
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str = "storeapi"
