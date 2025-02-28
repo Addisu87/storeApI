@@ -38,18 +38,6 @@ def create_access_token(subject: str | Any, expires_delta: timedelta) -> str:
     return encoded_jwt
 
 
-def create_confirmation_token(email: str):
-    logger.debug("Creating confirmation token", extra={"email": email})
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS
-    )
-    jwt_data = {"sub": email, "exp": expire, "type": "confirmation"}
-    encoded_jwt = jwt.encode(
-        jwt_data, settings.SECRET_KEY, algorithm=settings.ALGORITHM
-    )
-    return encoded_jwt
-
-
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
