@@ -30,8 +30,6 @@ class Settings(BaseConfig):
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
     ALGORITHM: str = "HS256"
-    # 60 minutes * 24 hours * 7 days = 7 days
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
 
     ADMIN_EMAIL: EmailStr
     ADMIN_PASSWORD: str
@@ -65,8 +63,6 @@ class Settings(BaseConfig):
             port=self.POSTGRES_PORT,
             path=self.POSTGRES_DB,
         )
-
-    EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
 
 
 class DevConfig(Settings):

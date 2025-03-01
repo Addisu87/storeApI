@@ -27,7 +27,7 @@ $ source .venv/bin/activate
 
 Make sure your editor is using the correct Python virtual environment, with the interpreter at `backend/.venv/bin/python`.
 
-Modify or add SQLModel models for data and SQL tables in `./backend/app/models.py`, API endpoints in `./backend/app/api/`, CRUD (Create, Read, Update, Delete) utils in `./backend/app/crud.py`.
+Modify or add SQLModel models for data and SQL tables in `./backend/app/models.py`, API endpoints in `./backend/app/api/`, CRUD (Create, Read, Update, Delete) utils in `./backend/app/services/user_services.py` and `./backend/app/services/item_services.py`.
 
 ## VS Code
 
@@ -75,6 +75,12 @@ There you can use the `fastapi run --reload` command to run the debug live reloa
 
 ```console
 $ fastapi run --reload app/main.py
+```
+
+Or, using uvicorn
+
+```console
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ...it will look like:
