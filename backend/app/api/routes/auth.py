@@ -9,9 +9,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 # Security
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.core.config import settings
 from app.core.deps import CurrentUser, SessionDep
-from app.core.security import create_access_token, get_password_hash
+from app.core.security import (
+    access_token_expire_minutes,
+    create_access_token,
+    get_password_hash,
+)
 from app.models.schemas import (
     Message,
     NewPassword,
@@ -65,7 +68,7 @@ async def login_access_token(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=access_token_expire_minutes())
     access_token = create_access_token(
         auth_user.id,
         expires_delta=access_token_expires,
@@ -81,7 +84,7 @@ def test_token(current_user: CurrentUser) -> Any:
 
 
 @router.post("/password-recovery/{email}")
-def recover_password(session: SessionDep, email: str) -> Message:
+def recover_password(session: SessionDep, email: str) -> Any:
     """Password Recovery"""
     pass
 
