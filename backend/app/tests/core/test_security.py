@@ -17,3 +17,4 @@ def test_create_access_token():
         token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
     ).items()
 
+
