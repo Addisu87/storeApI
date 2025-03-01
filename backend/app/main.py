@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 import sentry_sdk  # type: ignore
 from fastapi import FastAPI
@@ -6,6 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.core.config import settings
+from app.database.db import Session, engine, init_db
+
+logger = logging.getLogger(__name__)
 
 sentry_sdk.init(
     dsn=str(settings.SENTRY_DSN),
@@ -19,24 +23,26 @@ sentry_sdk.init(
     profiles_sample_rate=1.0,
 )
 
-logger = logging.getLogger(__name__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize the database synchronously
+    with Session(engine) as session:
+        init_db(session)
+    yield
 
 
-# Initialize FastAPI application
-# Metadata for API
-app = FastAPI(title=settings.PROJECT_NAME)
+app = FastAPI(lifespan=lifespan, title=settings.PROJECT_NAME)
 
 # Add CORS middleware
-# This will allow the frontend to make requests to the backend.
 if settings.all_cors_origins:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.all_cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],  # Allows all HTTP methods
-        allow_headers=["*"],  # Allows all headers
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
-
 
 # Include API routes
 app.include_router(api_router, prefix=settings.API_V1_STR)
