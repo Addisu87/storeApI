@@ -4,12 +4,15 @@ from sqlmodel import Session, create_engine, select
 
 from app.core.config import settings
 from app.models.schemas import User, UserCreate
-from app.services import user_services
+from app.services.user_services import create_user
 
 logger = logging.getLogger(__name__)
 
-# Create an Engine
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
+# Create a synchronous database engine
+engine = create_engine(
+    str(settings.SQLALCHEMY_DATABASE_URI),
+    echo=True,  # Enable SQL query logging for debugging
+)
 
 
 # make sure all SQLModel models are imported (app.models.schemas) before initializing DB
@@ -17,26 +20,29 @@ engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
 
 def init_db(session: Session) -> None:
-    # Tables should be created with Alembic migrations
-    # But if you don't want to use migrations, create
-    # the tables un-commenting the next lines
-    # from sqlmodel import SQLModel
+    """Initialize the database and ensure the admin user exists."""
+    try:
+        # Test the database connection
+        session.exec(select(1))
+        logger.info("Database connection successful")
 
-    # This works because the models are already imported and registered from app.models.schemas
-    # SQLModel.metadata.create_all(engine)
-
-    user = session.exec(select(User).where(User.email == settings.ADMIN_EMAIL)).first()
-    logger.debug(
-        f"Fetching user with email: {settings.ADMIN_EMAIL}, found user: {user}"
-    )
-
-    if not user:
+        # Check if the admin user exists
+        user = session.exec(
+            select(User).where(User.email == settings.ADMIN_EMAIL)
+        ).first()
         logger.debug(
-            f"No user found with email: {settings.ADMIN_EMAIL}, creating new user."
+            f"Fetching user with email: {settings.ADMIN_EMAIL}, found user: {user}"
         )
-        user_in = UserCreate(
-            email=settings.ADMIN_EMAIL,
-            password=settings.ADMIN_PASSWORD,
-            is_superuser=True,
-        )
-        user = user_services.create_user(session=session, user_create=user_in)
+
+        if not user:
+            user_in = UserCreate(
+                email=settings.ADMIN_EMAIL,
+                password=settings.ADMIN_PASSWORD,
+                is_superuser=True,
+            )
+            user = create_user(session=session, user_create=user_in)
+            logger.info(f"Admin user created: {user}")
+
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
+        raise e
