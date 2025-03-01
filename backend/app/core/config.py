@@ -2,7 +2,14 @@ import secrets
 from functools import lru_cache
 from typing import Annotated, Any, Literal
 
-from pydantic import AnyUrl, BeforeValidator, HttpUrl, PostgresDsn, computed_field
+from pydantic import (
+    AnyUrl,
+    BeforeValidator,
+    EmailStr,
+    HttpUrl,
+    PostgresDsn,
+    computed_field,
+)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,8 +33,8 @@ class Settings(BaseConfig):
     # 60 minutes * 24 hours * 7 days = 7 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
 
-    ADMIN_EMAIL: str | None = None
-    ADMIN_PASSWORD: str | None = None
+    ADMIN_EMAIL: EmailStr
+    ADMIN_PASSWORD: str
     FRONTEND_HOST: str = "http://localhost:5173"
     BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl], str, BeforeValidator(parse_cors)] = []
 
