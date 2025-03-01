@@ -27,12 +27,7 @@ oauth2_scheme = OAuth2PasswordBearer(
 
 # Create a Session Dependency
 def get_db() -> Generator[Session, None, None]:
-    """Provide a database session for use in a context manager.
-
-    Yields:
-        Session: A SQLAlchemy session object.
-
-    """
+    """Provide a synchronous database session."""
     with Session(engine) as session:
         yield session
 
