@@ -24,7 +24,7 @@ from app.models.schemas import (
     UserRegister,
 )
 from app.services.user_services import authenticate_user, create_user, get_user_by_email
-from app.utilities.password_utils import verify_password_reset_token
+from backend.app.services.password_services import verify_password_reset_token
 
 logger = logging.getLogger(__name__)
 

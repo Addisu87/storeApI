@@ -11,22 +11,11 @@ import jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
+from app.utilities.constants import access_token_expire_minutes
 
 logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def access_token_expire_minutes() -> int:
-    return 60 * 24 * 7
-
-
-def confirm_token_expire_minutes() -> int:
-    return 60 * 24
-
-
-def email_reset_token_expire_hours() -> int:
-    return 48
 
 
 # Create access token

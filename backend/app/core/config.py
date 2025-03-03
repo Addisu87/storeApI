@@ -64,6 +64,16 @@ class Settings(BaseConfig):
             path=self.POSTGRES_DB,
         )
 
+    # Emails
+    SMTP_TLS: bool = True
+    SMTP_SSL: bool = False
+    SMTP_PORT: int = 587
+    SMTP_HOST: str | None = None
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    EMAILS_FROM_EMAIL: EmailStr | None = None
+    EMAILS_FROM_NAME: EmailStr | None = None
+
 
 class DevConfig(Settings):
     model_config = SettingsConfigDict(env_prefix="DEV_", extra="ignore")

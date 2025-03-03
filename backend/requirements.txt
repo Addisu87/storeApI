@@ -15,3 +15,6 @@ asgi-correlation-id
 python-json-logger
 logtail-python
 sentry-sdk[fastapi]
+emails
+email-validator
+Jinja2
