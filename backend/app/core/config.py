@@ -65,12 +65,12 @@ class Settings(BaseConfig):
         )
 
     # FastAPI-Mail configuration
-    MAIL_USERNAME: str | None = None
-    MAIL_PASSWORD: str | None = None
-    MAIL_FROM: EmailStr | None = None
-    MAIL_FROM_NAME: str | None = None
+    MAIL_USERNAME: str
+    MAIL_PASSWORD: str
+    MAIL_FROM: EmailStr
+    MAIL_FROM_NAME: str | None = None  # Optional
     MAIL_PORT: int = 587
-    MAIL_SERVER: str | None = None
+    MAIL_SERVER: str
     MAIL_STARTTLS: bool = True
     MAIL_SSL_TLS: bool = False
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48

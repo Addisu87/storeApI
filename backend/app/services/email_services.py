@@ -52,7 +52,7 @@ async def send_email_background(
 def render_email_template(template_name: str, context: Dict[str, Any]) -> str:
     """Render an MJML email template with the given context."""
     try:
-        template_path = Path(__file__).parent / "templates" / template_name
+        template_path = Path(__file__).parent.parent / "templates" / template_name
         mjml_str = template_path.read_text()
         mjml_with_context = Template(mjml_str).render(context)
         return mjml2html(mjml_with_context)
