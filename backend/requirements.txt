@@ -17,4 +17,4 @@ logtail-python
 sentry-sdk[fastapi]
 emails
 email-validator
-Jinja2
+mjml-python

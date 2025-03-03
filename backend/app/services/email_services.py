@@ -6,6 +6,7 @@ from typing import Any
 
 import emails  # type: ignore
 from jinja2 import Template
+from mjml import mjml2html
 
 from app.core.config import settings
 
@@ -19,12 +20,16 @@ class EmailData:
 
 
 def render_email_template(*, template_name: str, context: dict[str, Any]) -> str:
-    """Render an email template with the given context."""
-    template_str = (
-        Path(__file__).parent / "email-templates" / "build" / template_name
-    ).read_text()
-    html_content = Template(template_str).render(context)
-    return html_content
+    """Render an MJML email template with the given context."""
+    try:
+        template_path = Path(__file__).parent / "templates" / template_name
+        mjml_str = template_path.read_text()
+        mjml_with_context = Template(mjml_str).render(context)
+        html_content = mjml2html(mjml_with_context)
+        return html_content
+    except Exception as e:
+        logger.error(f"Failed to render template {template_name}: {e}")
+        raise
 
 
 def send_email(*, email_to: str, subject: str = "", html_content: str = "") -> None:
@@ -66,8 +71,8 @@ def generate_test_email(email_to: str) -> EmailData:
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - Test email"
     html_content = render_email_template(
-        template_name="test_email.html",
-        context={"project_name": settings.PROJECT_NAME, "email": email_to},
+        template_name="test_email.mjml",
+        context={"project_name": project_name, "email": email_to},
     )
     return EmailData(html_content=html_content, subject=subject)
 
@@ -87,7 +92,7 @@ def generate_reset_password_email(email_to: str, email: str, token: str) -> Emai
     subject = f"{project_name} - Password recovery for user {email}"
     link = f"{settings.FRONTEND_HOST}/reset-password?token={token}"
     html_content = render_email_template(
-        template_name="reset_password.html",
+        template_name="reset_password.mjml",
         context={
             "project_name": settings.PROJECT_NAME,
             "username": email,
@@ -115,7 +120,7 @@ def generate_new_account_email(
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - New account for user {username}"
     html_content = render_email_template(
-        template_name="new_account.html",
+        template_name="new_account.mjml",
         context={
             "project_name": settings.PROJECT_NAME,
             "username": username,
