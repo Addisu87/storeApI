@@ -8,13 +8,12 @@ bcrypt
 sqlmodel
 alembic
 pydantic-settings
-Jinja2
 python-dotenv
 psycopg
 asgi-correlation-id
 python-json-logger
 logtail-python
 sentry-sdk[fastapi]
-emails
-email-validator
 mjml-python
+fastapi-mail
+jinja2
