@@ -64,15 +64,16 @@ class Settings(BaseConfig):
             path=self.POSTGRES_DB,
         )
 
-    # Emails
-    SMTP_TLS: bool = True
-    SMTP_SSL: bool = False
-    SMTP_PORT: int = 587
-    SMTP_HOST: str | None = None
-    SMTP_USER: str | None = None
-    SMTP_PASSWORD: str | None = None
-    EMAILS_FROM_EMAIL: EmailStr | None = None
-    EMAILS_FROM_NAME: EmailStr | None = None
+    # FastAPI-Mail configuration
+    MAIL_USERNAME: str | None = None
+    MAIL_PASSWORD: str | None = None
+    MAIL_FROM: EmailStr | None = None
+    MAIL_FROM_NAME: str | None = None
+    MAIL_PORT: int = 587
+    MAIL_SERVER: str | None = None
+    MAIL_STARTTLS: bool = True
+    MAIL_SSL_TLS: bool = False
+    EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
 
 
 class DevConfig(Settings):
