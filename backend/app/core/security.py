@@ -63,10 +63,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-# Password hashing - Converting into a sequence of bytes(strings)
-# it looks like gibberish
-
-
 def get_password_hash(password: str) -> str:
     """Hash a password.
 

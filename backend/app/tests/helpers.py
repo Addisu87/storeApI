@@ -11,14 +11,17 @@ from app.services.user_services import create_user, get_user_by_email, update_us
 
 
 def random_lower_string() -> str:
+    """Generate a random string of lowercase letters."""
     return "".join(random.choices(string.ascii_lowercase, k=32))
 
 
 def random_email() -> str:
+    """Generate a random email address."""
     return f"{random_lower_string()}@{random_lower_string()}.com"
 
 
 def get_superuser_token_headers(client: TestClient) -> dict[str, str]:
+    """Get authorization headers for the superuser."""
     login_data = {"username": settings.ADMIN_USER, "password": settings.ADMIN_PASSWORD}
 
     r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
@@ -31,6 +34,7 @@ def get_superuser_token_headers(client: TestClient) -> dict[str, str]:
 def user_authentication_headers(
     *, client: TestClient, email: str, password: str
 ) -> dict[str, str]:
+    """Get authorization headers for a user."""
     data = {"username": email, "password": password}
 
     r = client.post(f"{settings.API_V1_STR}/login/access-token", data=data)
@@ -41,6 +45,7 @@ def user_authentication_headers(
 
 
 def create_random_user(db: Session) -> User:
+    """Create a random user."""
     email = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=email, password=password)
@@ -62,13 +67,13 @@ def authentication_token_from_email(
     else:
         user_in_update = UserUpdate(password=password)
         if not user.id:
-            raise Exception("User in not set")
+            raise Exception("User id not set")
         user = update_user(session=db, db_user=user, user_in=user_in_update)
     return user_authentication_headers(client=client, email=email, password=password)
 
 
-# create random items
 def create_random_items(db: Session) -> Item:
+    """Create random items."""
     user = create_random_user(db)
     owner_id = user.id
 
