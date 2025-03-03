@@ -19,6 +19,7 @@ class EmailData:
 
 
 def render_email_template(*, template_name: str, context: dict[str, Any]) -> str:
+    """Render an email template with the given context."""
     template_str = (
         Path(__file__).parent / "email-templates" / "build" / template_name
     ).read_text()
@@ -27,6 +28,13 @@ def render_email_template(*, template_name: str, context: dict[str, Any]) -> str
 
 
 def send_email(*, email_to: str, subject: str = "", html_content: str = "") -> None:
+    """Send an email with the specified subject and HTML content.
+
+    Args:
+        email_to (str): Recipient email address.
+        subject (str, optional): Email subject. Defaults to "".
+        html_content (str, optional): HTML content of the email. Defaults to "".
+    """
     assert settings.emails_enabled, "No provided configuration for email variables"
     message = emails.Message(
         subject=subject,
@@ -47,6 +55,14 @@ def send_email(*, email_to: str, subject: str = "", html_content: str = "") -> N
 
 
 def generate_test_email(email_to: str) -> EmailData:
+    """Generate a test email.
+
+    Args:
+        email_to (str): Recipient email address.
+
+    Returns:
+        EmailData: The generated email data.
+    """
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - Test email"
     html_content = render_email_template(
@@ -57,6 +73,16 @@ def generate_test_email(email_to: str) -> EmailData:
 
 
 def generate_reset_password_email(email_to: str, email: str, token: str) -> EmailData:
+    """Generate a password reset email.
+
+    Args:
+        email_to (str): Recipient email address.
+        email (str): User email address.
+        token (str): Password reset token.
+
+    Returns:
+        EmailData: The generated email data.
+    """
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - Password recovery for user {email}"
     link = f"{settings.FRONTEND_HOST}/reset-password?token={token}"
@@ -76,6 +102,16 @@ def generate_reset_password_email(email_to: str, email: str, token: str) -> Emai
 def generate_new_account_email(
     email_to: str, username: str, password: str
 ) -> EmailData:
+    """Generate a new account email.
+
+    Args:
+        email_to (str): Recipient email address.
+        username (str): Username of the new account.
+        password (str): Password of the new account.
+
+    Returns:
+        EmailData: The generated email data.
+    """
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - New account for user {username}"
     html_content = render_email_template(
@@ -85,7 +121,7 @@ def generate_new_account_email(
             "username": username,
             "password": password,
             "email": email_to,
-            "link": settings.FRONTED_HOST,
+            "link": settings.FRONTEND_HOST,
         },
     )
     return EmailData(html_content=html_content, subject=subject)
