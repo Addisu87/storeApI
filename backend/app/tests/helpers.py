@@ -72,6 +72,14 @@ def authentication_token_from_email(
     return user_authentication_headers(client=client, email=email, password=password)
 
 
+# Helper to override current user dependency
+def override_current_user(user: User):
+    def _override():
+        return user
+
+    return _override
+
+
 def create_random_items(db: Session) -> Item:
     """Create random items."""
     user = create_random_user(db)
