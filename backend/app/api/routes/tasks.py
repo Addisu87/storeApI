@@ -1,4 +1,5 @@
-from fastapi import APIRouter, BackgroundTasks, Depends
+# app/api/routes/tasks.py
+from fastapi import APIRouter, BackgroundTasks, Body, Depends
 from pydantic import EmailStr
 
 from app.core.deps import get_current_active_superuser
@@ -13,7 +14,8 @@ router = APIRouter()
     status_code=201,
 )
 async def send_test_email_endpoint(
-    email_to: EmailStr, background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    email_to: EmailStr = Body(..., embed=True),  # Embed email_to in a JSON object
 ):
     """Test emails."""
     email_data = generate_test_email(email_to=email_to)
