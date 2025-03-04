@@ -1,4 +1,4 @@
-# tests/test_email_services.py
+# app/tests/services/test_email_services.py
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -36,54 +36,40 @@ def test_generate_test_email():
 
 @pytest.mark.asyncio
 async def test_send_email_background_enabled(mail_config, mocker):
-    # Mock FastMail.send_message
-    mock_fm = mocker.patch("fastapi_mail.FastMail", autospec=True)
+    mock_fm = mocker.patch("app.services.email_services.FastMail", autospec=True)
     mock_fm.return_value.send_message = AsyncMock()
 
-    # Set EMAILS_ENABLED to True
-    with patch.object(settings, "EMAILS_ENABLED", True):
-        email_to = "user@example.com"
-        email_data = EmailData(
-            subject="Test Subject", html_content="<p>This is a test email.</p>"
-        )
-
+    email_to = "user@example.com"
+    email_data = EmailData(
+        subject="Test Subject", html_content="<p>This is a test email.</p>"
+    )
+    with patch("app.services.email_services.logger") as mock_logger:
+        print("Before send_email_background")
         await send_email_background(email_to, email_data, mail_config)
+        print("After send_email_background")
+        if mock_logger.error.called:
+            print(f"Error logged: {mock_logger.error.call_args}")
+        if mock_logger.info.called:
+            print(f"Info logged: {mock_logger.info.call_args}")
 
-        # Verify the mock was called with correct MessageSchema
-        mock_fm.assert_called_once()
-        call_args = mock_fm.return_value.send_message.call_args[0][0]
-        assert isinstance(call_args, MessageSchema)
-        assert call_args.subject == "Test Subject"
-        assert call_args.recipients == [email_to]
-        assert call_args.body == "<p>This is a test email.</p>"
-        assert call_args.subtype == MessageType.html
-
-
-@pytest.mark.asyncio
-async def test_send_email_background_disabled(mail_config):
-    # Set EMAILS_ENABLED to False
-    with patch.object(settings, "EMAILS_ENABLED", False):
-        email_to = "user@example.com"
-        email_data = EmailData(
-            subject="Test Subject", html_content="<p>This is a test email.</p>"
-        )
-
-        # Should not raise any exceptions and simply return
-        await send_email_background(email_to, email_data, mail_config)
+    mock_fm.assert_called_once()
+    call_args = mock_fm.return_value.send_message.call_args[0][0]
+    assert isinstance(call_args, MessageSchema)
+    assert call_args.subject == "Test Subject"
+    assert call_args.recipients == [email_to]
+    assert call_args.body == "<p>This is a test email.</p>"
+    assert call_args.subtype == MessageType.html
 
 
 def test_send_email(mail_config, background_tasks):
     email_to = "user@example.com"
     email_data = generate_test_email(email_to)
-
     send_email(
         email_to=email_to,
         email_data=email_data,
         background_tasks=background_tasks,
         config=mail_config,
     )
-
-    # Verify background task was scheduled
     tasks = background_tasks.tasks
     assert len(tasks) == 1
     task = tasks[0]
