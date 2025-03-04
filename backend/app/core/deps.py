@@ -26,14 +26,14 @@ oauth2_scheme = OAuth2PasswordBearer(
 
 
 # Create a Session Dependency
-def get_db() -> Generator[Session, None, None]:
+def get_session() -> Generator[Session, None, None]:
     """Provide a synchronous database session."""
     with Session(engine) as session:
         yield session
 
 
 # Use Annotated for Dependency Injection
-SessionDep = Annotated[Session, Depends(get_db)]
+SessionDep = Annotated[Session, Depends(get_session)]
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
 
 

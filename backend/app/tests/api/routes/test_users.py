@@ -1,82 +1,19 @@
 import uuid
-from typing import Generator
 from unittest.mock import patch
 
-import pytest
 from app.core.config import settings
 from app.core.deps import get_current_active_superuser
-from app.core.security import get_password_hash
-from app.database.db import engine as app_engine
-from app.database.db import init_db
 from app.main import app
 from app.models.schemas import Item, User
-from app.tests.helpers import override_current_user
 from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel, create_engine, delete
-
-
-# PostgreSQL test database setup
-@pytest.fixture(name="engine", scope="session")
-def engine_fixture() -> create_engine:
-    test_db_url = "postgresql+psycopg2://testuser:testpass@localhost/testdb"
-    test_engine = create_engine(test_db_url, echo=False)
-    SQLModel.metadata.create_all(test_engine)
-    yield test_engine
-    SQLModel.metadata.drop_all(test_engine)
-
-
-@pytest.fixture(name="db", scope="session", autouse=True)
-def db_fixture(engine: create_engine) -> Generator[Session, None, None]:
-    with Session(engine) as session:
-        init_db(session)
-        yield session
-        session.exec(delete(Item))
-        session.exec(delete(User))
-        session.commit()
-
-
-@pytest.fixture(name="client", scope="module")
-def client_fixture(db: Session) -> Generator[TestClient, None, None]:
-    def _get_session_override():
-        return db
-
-    app.dependency_overrides[app_engine] = lambda: db
-    with TestClient(app) as client:
-        yield client
-    app.dependency_overrides.clear()
-
-
-@pytest.fixture(name="superuser", scope="module")
-def superuser_fixture(db: Session) -> User:
-    user = User(
-        email="superuser@example.com",
-        hashed_password=get_password_hash("supersecret"),
-        is_superuser=True,
-        is_active=True,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
-
-
-@pytest.fixture(name="normal_user", scope="module")
-def normal_user_fixture(db: Session) -> User:
-    user = User(
-        email="user@example.com",
-        hashed_password=get_password_hash("usersecret"),
-        is_superuser=False,
-        is_active=True,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+from sqlmodel import Session
 
 
 # USER CRUD TESTS
 # Create User
-def test_create_user_success(client: TestClient, superuser: User, db: Session):
+def test_create_user_success(
+    client: TestClient, superuser: User, db: Session, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         superuser
     )
@@ -98,7 +35,7 @@ def test_create_user_success(client: TestClient, superuser: User, db: Session):
 
 
 def test_create_user_duplicate_email(
-    client: TestClient, superuser: User, normal_user: User
+    client: TestClient, superuser: User, normal_user: User, override_current_user
 ):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         superuser
@@ -112,7 +49,9 @@ def test_create_user_duplicate_email(
 
 
 # Read User
-def test_read_users_basic(client: TestClient, superuser: User, normal_user: User):
+def test_read_users_basic(
+    client: TestClient, superuser: User, normal_user: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         superuser
     )
@@ -123,12 +62,14 @@ def test_read_users_basic(client: TestClient, superuser: User, normal_user: User
     assert len(data["data"]) >= 2
 
 
-def test_read_users_pagination(client: TestClient, superuser: User, db: Session):
+def test_read_users_pagination(
+    client: TestClient, superuser: User, db: Session, override_current_user
+):
     for i in range(5):
         db.add(
             User(
                 email=f"user{i}@example.com",
-                hashed_password=get_password_hash("testpass"),
+                hashed_password="hashed_testpass",  # Simplified for test
                 is_superuser=False,
                 is_active=True,
             )
@@ -145,7 +86,7 @@ def test_read_users_pagination(client: TestClient, superuser: User, db: Session)
     assert len(data["data"]) == 2
 
 
-def test_read_user_me(client: TestClient, normal_user: User):
+def test_read_user_me(client: TestClient, normal_user: User, override_current_user):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         normal_user
     )
@@ -155,7 +96,9 @@ def test_read_user_me(client: TestClient, normal_user: User):
     assert data["email"] == "user@example.com"
 
 
-def test_read_user_by_id_self(client: TestClient, normal_user: User):
+def test_read_user_by_id_self(
+    client: TestClient, normal_user: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         normal_user
     )
@@ -166,7 +109,7 @@ def test_read_user_by_id_self(client: TestClient, normal_user: User):
 
 
 def test_read_user_by_id_superuser(
-    client: TestClient, superuser: User, normal_user: User
+    client: TestClient, superuser: User, normal_user: User, override_current_user
 ):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         superuser
@@ -177,10 +120,12 @@ def test_read_user_by_id_superuser(
     assert data["email"] == "user@example.com"
 
 
-def test_read_user_by_id_forbidden(client: TestClient, normal_user: User, db: Session):
+def test_read_user_by_id_forbidden(
+    client: TestClient, normal_user: User, db: Session, override_current_user
+):
     other_user = User(
         email="other@example.com",
-        hashed_password=get_password_hash("otherpass"),
+        hashed_password="hashed_otherpass",  # Simplified for test
         is_superuser=False,
         is_active=True,
     )
@@ -197,7 +142,9 @@ def test_read_user_by_id_forbidden(client: TestClient, normal_user: User, db: Se
 
 
 # Update User
-def test_update_user_me_success(client: TestClient, normal_user: User):
+def test_update_user_me_success(
+    client: TestClient, normal_user: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         normal_user
     )
@@ -210,7 +157,7 @@ def test_update_user_me_success(client: TestClient, normal_user: User):
 
 
 def test_update_user_me_email_conflict(
-    client: TestClient, normal_user: User, superuser: User
+    client: TestClient, normal_user: User, superuser: User, override_current_user
 ):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         normal_user
@@ -222,7 +169,9 @@ def test_update_user_me_email_conflict(
     assert response.json()["detail"] == "User with this email already exists"
 
 
-def test_update_password_me_success(client: TestClient, normal_user: User):
+def test_update_password_me_success(
+    client: TestClient, normal_user: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         normal_user
     )
@@ -234,7 +183,9 @@ def test_update_password_me_success(client: TestClient, normal_user: User):
     assert response.json()["message"] == "Password updated successfully"
 
 
-def test_update_password_me_wrong_current(client: TestClient, normal_user: User):
+def test_update_password_me_wrong_current(
+    client: TestClient, normal_user: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         normal_user
     )
@@ -246,7 +197,9 @@ def test_update_password_me_wrong_current(client: TestClient, normal_user: User)
     assert response.json()["detail"] == "Incorrect password"
 
 
-def test_update_password_me_same_password(client: TestClient, normal_user: User):
+def test_update_password_me_same_password(
+    client: TestClient, normal_user: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         normal_user
     )
@@ -261,7 +214,9 @@ def test_update_password_me_same_password(client: TestClient, normal_user: User)
     )
 
 
-def test_update_user_success(client: TestClient, superuser: User, normal_user: User):
+def test_update_user_success(
+    client: TestClient, superuser: User, normal_user: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         superuser
     )
@@ -274,7 +229,9 @@ def test_update_user_success(client: TestClient, superuser: User, normal_user: U
     assert data["full_name"] == "Updated Normal User"
 
 
-def test_update_user_not_found(client: TestClient, superuser: User):
+def test_update_user_not_found(
+    client: TestClient, superuser: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         superuser
     )
@@ -288,7 +245,9 @@ def test_update_user_not_found(client: TestClient, superuser: User):
 
 
 # Delete User
-def test_delete_user_me_normal(client: TestClient, normal_user: User, db: Session):
+def test_delete_user_me_normal(
+    client: TestClient, normal_user: User, db: Session, override_current_user
+):
     item = Item(title="Test Item", description="Test", owner_id=normal_user.id)
     db.add(item)
     db.commit()
@@ -302,7 +261,9 @@ def test_delete_user_me_normal(client: TestClient, normal_user: User, db: Sessio
     assert db.get(Item, item.id) is None
 
 
-def test_delete_user_me_superuser(client: TestClient, superuser: User):
+def test_delete_user_me_superuser(
+    client: TestClient, superuser: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         superuser
     )
@@ -312,7 +273,11 @@ def test_delete_user_me_superuser(client: TestClient, superuser: User):
 
 
 def test_delete_user_success(
-    client: TestClient, superuser: User, normal_user: User, db: Session
+    client: TestClient,
+    superuser: User,
+    normal_user: User,
+    db: Session,
+    override_current_user,
 ):
     item = Item(title="Test Item", description="Test", owner_id=normal_user.id)
     db.add(item)
@@ -327,7 +292,9 @@ def test_delete_user_success(
     assert db.get(Item, item.id) is None
 
 
-def test_delete_user_self_forbidden(client: TestClient, superuser: User):
+def test_delete_user_self_forbidden(
+    client: TestClient, superuser: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         superuser
     )

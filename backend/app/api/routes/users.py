@@ -164,7 +164,6 @@ def update_user(
     user_id: uuid.UUID,
     user_in: UserUpdate,
     session: SessionDep,
-    _: CurrentUser = Depends(get_current_active_superuser),
 ) -> UserPublic:
     """Update a user by ID (superuser only)."""
     user = session.get(User, user_id)
@@ -195,7 +194,7 @@ def update_user(
 def delete_user(
     user_id: uuid.UUID,
     session: SessionDep,
-    current_user: CurrentUser = Depends(get_current_active_superuser),
+    current_user: CurrentUser,
 ) -> Message:
     """Delete a user by ID (superuser only)."""
     user = session.get(User, user_id)

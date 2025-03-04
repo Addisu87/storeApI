@@ -4,14 +4,15 @@ from app.core.config import settings
 from app.core.deps import get_current_active_superuser
 from app.main import app
 from app.models.schemas import Item, User
-from app.tests.helpers import override_current_user
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 
-# ITEM CRUD TESTS (Assuming a typical item router)
+# ITEM CRUD TESTS
 # Create Item
-def test_create_item_success(client: TestClient, normal_user: User, db: Session):
+def test_create_item_success(
+    client: TestClient, normal_user: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         normal_user
     )
@@ -27,7 +28,9 @@ def test_create_item_success(client: TestClient, normal_user: User, db: Session)
 
 
 # Read Item
-def test_read_items_basic(client: TestClient, normal_user: User, db: Session):
+def test_read_items_basic(
+    client: TestClient, normal_user: User, db: Session, override_current_user
+):
     item = Item(title="Test Item", description="Test", owner_id=normal_user.id)
     db.add(item)
     db.commit()
@@ -42,7 +45,9 @@ def test_read_items_basic(client: TestClient, normal_user: User, db: Session):
     assert data["data"][0]["title"] == "Test Item"
 
 
-def test_read_item_by_id_success(client: TestClient, normal_user: User, db: Session):
+def test_read_item_by_id_success(
+    client: TestClient, normal_user: User, db: Session, override_current_user
+):
     item = Item(title="Test Item", description="Test", owner_id=normal_user.id)
     db.add(item)
     db.commit()
@@ -58,7 +63,9 @@ def test_read_item_by_id_success(client: TestClient, normal_user: User, db: Sess
     assert data["owner_id"] == str(normal_user.id)
 
 
-def test_read_item_by_id_not_found(client: TestClient, normal_user: User):
+def test_read_item_by_id_not_found(
+    client: TestClient, normal_user: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         normal_user
     )
@@ -69,7 +76,9 @@ def test_read_item_by_id_not_found(client: TestClient, normal_user: User):
 
 
 # Update Item
-def test_update_item_success(client: TestClient, normal_user: User, db: Session):
+def test_update_item_success(
+    client: TestClient, normal_user: User, db: Session, override_current_user
+):
     item = Item(title="Test Item", description="Test", owner_id=normal_user.id)
     db.add(item)
     db.commit()
@@ -88,7 +97,9 @@ def test_update_item_success(client: TestClient, normal_user: User, db: Session)
     assert data["description"] == "Updated Description"
 
 
-def test_update_item_not_found(client: TestClient, normal_user: User):
+def test_update_item_not_found(
+    client: TestClient, normal_user: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         normal_user
     )
@@ -102,7 +113,9 @@ def test_update_item_not_found(client: TestClient, normal_user: User):
 
 
 # Delete Item
-def test_delete_item_success(client: TestClient, normal_user: User, db: Session):
+def test_delete_item_success(
+    client: TestClient, normal_user: User, db: Session, override_current_user
+):
     item = Item(title="Test Item", description="Test", owner_id=normal_user.id)
     db.add(item)
     db.commit()
@@ -117,7 +130,9 @@ def test_delete_item_success(client: TestClient, normal_user: User, db: Session)
     assert db.get(Item, item.id) is None
 
 
-def test_delete_item_not_found(client: TestClient, normal_user: User):
+def test_delete_item_not_found(
+    client: TestClient, normal_user: User, override_current_user
+):
     app.dependency_overrides[get_current_active_superuser] = override_current_user(
         normal_user
     )
