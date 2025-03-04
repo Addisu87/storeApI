@@ -4,26 +4,26 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine, delete
-
-from app.core.deps import get_session
-from app.core.security import get_password_hash
-from app.database.db import init_db
-from app.main import app
-from app.models.schemas import Item, User
-from app.tests.helpers import (
-    create_random_item as create_random_item_helper,
+from tests.helpers import (
+    create_random_item as create_random_item,
 )
-from app.tests.helpers import (
+from tests.helpers import (
     create_random_user,
     normal_user_token_headers,
     override_current_user,
     superuser_token_headers,
 )
 
+from app.core.deps import get_session
+from app.core.security import get_password_hash
+from app.database.db import init_db
+from app.main import app
+from app.models.schemas import Item, User
+
 
 @pytest.fixture(name="engine", scope="session")
 def engine_fixture() -> Generator[Engine, None, None]:
-    test_db_url = "postgresql+psycopg://testuser:testpass@localhost/testdb"
+    test_db_url = "postgresql+psycopg://storeapi:storeapi87@localhost/testdb"
     test_engine = create_engine(test_db_url, echo=False)
     SQLModel.metadata.create_all(test_engine)
     yield test_engine
@@ -45,9 +45,7 @@ def client_fixture(db: Session) -> Generator[TestClient, None, None]:
     def _get_session_override():
         return db
 
-    app.dependency_overrides[get_session] = (
-        _get_session_override  # Override get_session
-    )
+    app.dependency_overrides[get_session] = _get_session_override
     with TestClient(app) as client:
         yield client
     app.dependency_overrides.clear()
@@ -100,7 +98,7 @@ def create_random_user_fixture(db: Session):
 
 @pytest.fixture(name="create_random_item", scope="module")
 def create_random_item_fixture(db: Session):
-    return lambda owner=None: create_random_item_helper(db, owner)
+    return lambda owner=None: create_random_item(db, owner)
 
 
 @pytest.fixture(name="override_current_user", scope="module")
