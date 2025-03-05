@@ -5,15 +5,12 @@ from fastapi.testclient import TestClient
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine, delete
 
-from app.core.deps import get_session
 from app.core.security import get_password_hash
 from app.database.db import init_db
 from app.main import app
 from app.models.schemas import Item, User
 from app.tests.helpers import (
-    create_random_item as create_random_item,
-)
-from app.tests.helpers import (
+    create_random_item,
     create_random_user,
     normal_user_token_headers,
     override_current_user,
@@ -21,6 +18,7 @@ from app.tests.helpers import (
 )
 
 
+# Engine fixture remains the same
 @pytest.fixture(name="engine", scope="session")
 def engine_fixture() -> Generator[Engine, None, None]:
     test_db_url = "postgresql+psycopg://storeapi:storeapi87@localhost/testdb"
@@ -30,6 +28,7 @@ def engine_fixture() -> Generator[Engine, None, None]:
     SQLModel.metadata.drop_all(test_engine)
 
 
+# Simplified db fixture to match working example
 @pytest.fixture(name="db", scope="session", autouse=True)
 def db_fixture(engine: Engine) -> Generator[Session, None, None]:
     with Session(engine) as session:
@@ -40,17 +39,14 @@ def db_fixture(engine: Engine) -> Generator[Session, None, None]:
         session.commit()
 
 
+# Simplified client fixture
 @pytest.fixture(name="client", scope="module")
-def client_fixture(db: Session) -> Generator[TestClient, None, None]:
-    def _get_session_override():
-        return db
-
-    app.dependency_overrides[get_session] = _get_session_override
+def client_fixture() -> Generator[TestClient, None, None]:
     with TestClient(app) as client:
         yield client
-    app.dependency_overrides.clear()
 
 
+# Keep your user fixtures but simplify their usage
 @pytest.fixture(name="superuser", scope="module")
 def superuser_fixture(db: Session) -> User:
     user = User(
@@ -79,8 +75,9 @@ def normal_user_fixture(db: Session) -> User:
     return user
 
 
+# Simplify token headers fixtures
 @pytest.fixture(name="superuser_token_headers", scope="module")
-def superuser_token_headers_fixture(client: TestClient) -> dict[str, str]:
+def superuser_token_headers_fixture(client: TestClient, db: Session) -> dict[str, str]:
     return superuser_token_headers(client)
 
 
@@ -91,6 +88,7 @@ def normal_user_token_headers_fixture(
     return normal_user_token_headers(client, db)
 
 
+# Keep your helper fixtures
 @pytest.fixture(name="create_random_user", scope="module")
 def create_random_user_fixture(db: Session):
     return lambda: create_random_user(db)

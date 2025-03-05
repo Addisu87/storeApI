@@ -1,5 +1,3 @@
-# Tests for security logic
-
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -24,6 +22,7 @@ def test_create_access_token(db: Session) -> None:
     password = random_lower_string()
     user_in = UserCreate(email=email, password=password)
     user = create_user(session=db, user_create=user_in)
+    db.commit()
 
     access_token = create_access_token(
         subject=user.email,
@@ -59,6 +58,7 @@ def test_expired_token(db: Session) -> None:
     password = random_lower_string()
     user_in = UserCreate(email=email, password=password)
     user = create_user(session=db, user_create=user_in)
+    db.commit()
 
     access_token = create_access_token(
         subject=user.email, expires_delta=timedelta(seconds=-1)
@@ -72,6 +72,7 @@ def test_valid_token(db: Session) -> None:
     password = random_lower_string()
     user_in = UserCreate(email=email, password=password)
     user = create_user(session=db, user_create=user_in)
+    db.commit()
 
     access_token = create_access_token(
         subject=user.email,
@@ -88,6 +89,7 @@ def test_create_access_token_with_custom_expiration(db: Session) -> None:
     password = random_lower_string()
     user_in = UserCreate(email=email, password=password)
     user = create_user(session=db, user_create=user_in)
+    db.commit()
 
     custom_expiration = timedelta(hours=1)
     access_token = create_access_token(
@@ -105,14 +107,14 @@ def test_create_access_token_with_invalid_secret_key(db: Session) -> None:
     password = random_lower_string()
     user_in = UserCreate(email=email, password=password)
     user = create_user(session=db, user_create=user_in)
+    db.commit()
 
-    invalid_secret_key = "invalidsecretkey"
     access_token = create_access_token(
         subject=user.email,
         expires_delta=timedelta(minutes=access_token_expire_minutes()),
     )
     with pytest.raises(JWTError):
-        jwt.decode(access_token, invalid_secret_key, algorithms=[settings.ALGORITHM])
+        jwt.decode(access_token, "invalidsecretkey", algorithms=[settings.ALGORITHM])
 
 
 def test_create_access_token_with_invalid_algorithm(db: Session) -> None:
@@ -120,11 +122,11 @@ def test_create_access_token_with_invalid_algorithm(db: Session) -> None:
     password = random_lower_string()
     user_in = UserCreate(email=email, password=password)
     user = create_user(session=db, user_create=user_in)
+    db.commit()
 
-    invalid_algorithm = "HS512"
     access_token = create_access_token(
         subject=user.email,
         expires_delta=timedelta(minutes=access_token_expire_minutes()),
     )
     with pytest.raises(JWTError):
-        jwt.decode(access_token, settings.SECRET_KEY, algorithms=[invalid_algorithm])
+        jwt.decode(access_token, settings.SECRET_KEY, algorithms=["HS512"])

@@ -1,23 +1,18 @@
 import uuid
 
 from app.core.config import settings
-from app.core.deps import get_current_active_superuser
-from app.main import app
 from app.models.schemas import Item, User
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 
 # ITEM CRUD TESTS
-# Create Item
 def test_create_item_success(
-    client: TestClient, normal_user: User, override_current_user
+    client: TestClient, normal_user: User, normal_user_token_headers: dict[str, str]
 ):
-    app.dependency_overrides[get_current_active_superuser] = override_current_user(
-        normal_user
-    )
     response = client.post(
         f"{settings.API_V1_STR}/items/",
+        headers=normal_user_token_headers,
         json={"title": "New Item", "description": "Item Description"},
     )
     assert response.status_code == 201
@@ -27,36 +22,40 @@ def test_create_item_success(
     assert data["owner_id"] == str(normal_user.id)
 
 
-# Read Item
 def test_read_items_basic(
-    client: TestClient, normal_user: User, db: Session, override_current_user
+    client: TestClient,
+    normal_user: User,
+    db: Session,
+    normal_user_token_headers: dict[str, str],
 ):
     item = Item(title="Test Item", description="Test", owner_id=normal_user.id)
     db.add(item)
     db.commit()
 
-    app.dependency_overrides[get_current_active_superuser] = override_current_user(
-        normal_user
+    response = client.get(
+        f"{settings.API_V1_STR}/items/", headers=normal_user_token_headers
     )
-    response = client.get(f"{settings.API_V1_STR}/items/")
     assert response.status_code == 200
     data = response.json()
-    assert len(data["data"]) >= 1
+    # Adjust based on your API response format
+    assert len(data["data"]) >= 1  # If your API returns {"data": [...]}
     assert data["data"][0]["title"] == "Test Item"
 
 
 def test_read_item_by_id_success(
-    client: TestClient, normal_user: User, db: Session, override_current_user
+    client: TestClient,
+    normal_user: User,
+    db: Session,
+    normal_user_token_headers: dict[str, str],
 ):
     item = Item(title="Test Item", description="Test", owner_id=normal_user.id)
     db.add(item)
     db.commit()
     db.refresh(item)
 
-    app.dependency_overrides[get_current_active_superuser] = override_current_user(
-        normal_user
+    response = client.get(
+        f"{settings.API_V1_STR}/items/{item.id}", headers=normal_user_token_headers
     )
-    response = client.get(f"{settings.API_V1_STR}/items/{item.id}")
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == "Test Item"
@@ -64,31 +63,31 @@ def test_read_item_by_id_success(
 
 
 def test_read_item_by_id_not_found(
-    client: TestClient, normal_user: User, override_current_user
+    client: TestClient, normal_user_token_headers: dict[str, str]
 ):
-    app.dependency_overrides[get_current_active_superuser] = override_current_user(
-        normal_user
-    )
     nonexistent_id = uuid.uuid4()
-    response = client.get(f"{settings.API_V1_STR}/items/{nonexistent_id}")
+    response = client.get(
+        f"{settings.API_V1_STR}/items/{nonexistent_id}",
+        headers=normal_user_token_headers,
+    )
     assert response.status_code == 404
     assert response.json()["detail"] == "Item not found"
 
 
-# Update Item
 def test_update_item_success(
-    client: TestClient, normal_user: User, db: Session, override_current_user
+    client: TestClient,
+    normal_user: User,
+    db: Session,
+    normal_user_token_headers: dict[str, str],
 ):
     item = Item(title="Test Item", description="Test", owner_id=normal_user.id)
     db.add(item)
     db.commit()
     db.refresh(item)
 
-    app.dependency_overrides[get_current_active_superuser] = override_current_user(
-        normal_user
-    )
     response = client.patch(
         f"{settings.API_V1_STR}/items/{item.id}",
+        headers=normal_user_token_headers,
         json={"title": "Updated Item", "description": "Updated Description"},
     )
     assert response.status_code == 200
@@ -98,45 +97,44 @@ def test_update_item_success(
 
 
 def test_update_item_not_found(
-    client: TestClient, normal_user: User, override_current_user
+    client: TestClient, normal_user_token_headers: dict[str, str]
 ):
-    app.dependency_overrides[get_current_active_superuser] = override_current_user(
-        normal_user
-    )
     nonexistent_id = uuid.uuid4()
     response = client.patch(
         f"{settings.API_V1_STR}/items/{nonexistent_id}",
+        headers=normal_user_token_headers,
         json={"title": "Updated Item"},
     )
     assert response.status_code == 404
     assert response.json()["detail"] == "Item not found"
 
 
-# Delete Item
 def test_delete_item_success(
-    client: TestClient, normal_user: User, db: Session, override_current_user
+    client: TestClient,
+    normal_user: User,
+    db: Session,
+    normal_user_token_headers: dict[str, str],
 ):
     item = Item(title="Test Item", description="Test", owner_id=normal_user.id)
     db.add(item)
     db.commit()
     db.refresh(item)
 
-    app.dependency_overrides[get_current_active_superuser] = override_current_user(
-        normal_user
+    response = client.delete(
+        f"{settings.API_V1_STR}/items/{item.id}", headers=normal_user_token_headers
     )
-    response = client.delete(f"{settings.API_V1_STR}/items/{item.id}")
     assert response.status_code == 200
     assert response.json()["message"] == "Item deleted successfully"
     assert db.get(Item, item.id) is None
 
 
 def test_delete_item_not_found(
-    client: TestClient, normal_user: User, override_current_user
+    client: TestClient, normal_user_token_headers: dict[str, str]
 ):
-    app.dependency_overrides[get_current_active_superuser] = override_current_user(
-        normal_user
-    )
     nonexistent_id = uuid.uuid4()
-    response = client.delete(f"{settings.API_V1_STR}/items/{nonexistent_id}")
+    response = client.delete(
+        f"{settings.API_V1_STR}/items/{nonexistent_id}",
+        headers=normal_user_token_headers,
+    )
     assert response.status_code == 404
     assert response.json()["detail"] == "Item not found"
