@@ -28,14 +28,18 @@ engine = create_engine(settings.get_db_uri_string(), echo=True)
 
 
 # Create a Session Dependency
-def get_session() -> Generator[Session, None, None]:
+
+engine = create_engine(settings.get_db_uri_string(), echo=True)
+
+
+def get_db() -> Generator[Session, None, None]:
     """Provide a synchronous database session."""
     with Session(engine) as session:
         yield session
 
 
 # Use Annotated for Dependency Injection
-SessionDep = Annotated[Session, Depends(get_session)]
+SessionDep = Annotated[Session, Depends(get_db)]
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
 
 
