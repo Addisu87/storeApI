@@ -1,12 +1,9 @@
-# Routes for login, token refresh, logout
-
+# app/api/routes/auth.py
 import logging
 from datetime import timedelta
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
-
-# Security
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.core.deps import CurrentUser, SessionDep
@@ -34,11 +31,7 @@ router = APIRouter(prefix="", tags=["auth"])
 @router.post("/register", response_model=UserPublic)
 def register_user(session: SessionDep, user_in: UserRegister) -> Any:
     """Create new user without the need to be logged in."""
-
     user = get_user_by_email(session=session, email=user_in.email)
-
-    logger.debug(user)
-
     if user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -55,18 +48,19 @@ async def login_access_token(
     session: SessionDep,
 ) -> Token:
     """OAuth2 compatible token login, get an access token for future requests."""
-
     auth_user = authenticate_user(
         session=session, email=form_data.username, password=form_data.password
     )
 
     if not auth_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
         )
-    elif not auth_user.is_active:
+    if not auth_user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Inactive user",
         )
     access_token_expires = timedelta(minutes=access_token_expire_minutes())
     access_token = create_access_token(
@@ -79,7 +73,6 @@ async def login_access_token(
 @router.post("/login/test-token", response_model=UserPublic)
 def test_token(current_user: CurrentUser) -> Any:
     """Test access token"""
-
     return current_user
 
 
@@ -92,7 +85,6 @@ def recover_password(session: SessionDep, email: str) -> Any:
 @router.post("/reset-password")
 def reset_password(session: SessionDep, body: NewPassword) -> Message:
     """Reset Password"""
-
     email = verify_password_reset_token(token=body.token)
     if not email:
         raise HTTPException(
@@ -104,9 +96,9 @@ def reset_password(session: SessionDep, body: NewPassword) -> Message:
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="A user with this email does not exit in the system!",
+            detail="A user with this email does not exist in the system!",
         )
-    elif not user.is_active:
+    if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user",
@@ -116,10 +108,10 @@ def reset_password(session: SessionDep, body: NewPassword) -> Message:
     user.hashed_password = hashed_password
     session.add(user)
     session.commit()
-    return Message(message="Password updated successefully.")
+    return Message(message="Password updated successfully.")
 
 
-@router.post("/password-reovery-html-content/{email}")
+@router.post("/password-recovery-html-content/{email}")
 def recover_password_html_content(session: SessionDep, email: str) -> Any:
     """HTML Content for Password Recovery"""
     pass

@@ -44,7 +44,7 @@ def create_user_route(
         )
 
     user = create_user(session=session, user_create=user_in)
-    if settings.emails_enabled and user_in.email:
+    if settings.EMAILS_ENABLED and user_in.email:
         email_data = generate_new_account_email(
             email_to=user_in.email, username=user_in.email, password=user_in.password
         )
@@ -172,16 +172,7 @@ def update_user(
                 detail="User with this email already exists",
             )
 
-    user_data = user_in.model_dump(exclude_unset=True)
-    if user_in.password:
-        user_data["hashed_password"] = get_password_hash(user_in.password)
-        del user_data["password"]
-
-    if user_data:  # Only update if there’s data
-        user.sqlmodel_update(user_data)
-        session.add(user)
-        session.commit()
-        session.refresh(user)
+    user = update_user(session=session, user_id=user_id, user_in=user_in)
     return UserPublic.model_validate(user)
 
 

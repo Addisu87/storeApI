@@ -1,14 +1,13 @@
 import random
 import string
-from typing import Dict
 
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from app.core.config import settings
-from app.models.schemas import Item, ItemCreate, User, UserCreate, UserUpdate
+from app.models.schemas import Item, ItemCreate, User, UserCreate
 from app.services.item_services import create_item
-from app.services.user_services import create_user, get_user_by_email, update_user
+from app.services.user_services import create_user
 
 
 def random_lower_string() -> str:
@@ -21,30 +20,12 @@ def random_email() -> str:
     return f"{random_lower_string()}@{random_lower_string()}.com"
 
 
-def superuser_token_headers(client: TestClient) -> Dict[str, str]:
-    """Get authorization headers for the superuser."""
-    login_data = {"username": settings.ADMIN_EMAIL, "password": settings.ADMIN_PASSWORD}
-    r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
-    tokens = r.json()
-    a_token = tokens["access_token"]
-    return {"Authorization": f"Bearer {a_token}"}
-
-
-def normal_user_token_headers(client: TestClient, db: Session) -> Dict[str, str]:
+def normal_user_token_headers(client: TestClient, db: Session) -> dict[str, str]:
     """Get authorization headers for a normal user."""
-    email = "test@example.com"
-    password = random_lower_string()
-    user = get_user_by_email(session=db, email=email)
-    if not user:
-        user_in_create = UserCreate(email=email, password=password)
-        user = create_user(session=db, user_create=user_in_create)
-    else:
-        user_in_update = UserUpdate(password=password)
-        if not user.id:
-            raise Exception("User id not set")
-        user = update_user(session=db, db_user=user, user_in=user_in_update)
-    data = {"username": email, "password": password}
+    # Use fixture credentials directly
+    data = {"username": "user@example.com", "password": "usersecret"}
     r = client.post(f"{settings.API_V1_STR}/login/access-token", data=data)
+    assert r.status_code == 200, f"Login failed: {r.text}"
     response = r.json()
     auth_token = response["access_token"]
     return {"Authorization": f"Bearer {auth_token}"}

@@ -76,11 +76,6 @@ class Settings(BaseConfig):
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
     EMAILS_ENABLED: bool = True
 
-    # @computed_field
-    # @property
-    # def emails_enabled(self) -> bool:
-    #     return bool(self.MAIL_SERVER and self.MAIL_FROM)
-
 
 class DevConfig(Settings):
     model_config = SettingsConfigDict(env_prefix="DEV_", extra="ignore")
