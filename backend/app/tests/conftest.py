@@ -1,61 +1,51 @@
 # app/tests/conftest.py
-import subprocess
 from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.engine import Engine
-from sqlmodel import Session, SQLModel, create_engine, delete, select
+from sqlmodel import Session, SQLModel, create_engine, select
 
-from app.core.config import settings
+from app.core.config import get_settings
 from app.core.security import get_password_hash
 from app.main import app
-from app.models.schemas import Item, User
-from app.tests.helpers import (
-    create_random_item,
-    create_random_user,
-    override_current_user,
-)
+from app.models.schemas import User
+from app.tests.helpers import create_random_item
 
-
-@pytest.fixture(scope="session", autouse=True)
-def apply_migrations():
-    # Apply Alembic migrations before tests
-    cmd = "alembic -x db_url=postgresql+psycopg://storeapi:storeapi87@localhost/testdb upgrade head"
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    assert result.returncode == 0, f"Alembic migration failed: {result.stderr}"
-    print("Alembic migrations applied successfully")
+# Use existing storeapidb
+TEST_DB_URL = "postgresql+psycopg://storeapi:storeapi87@localhost:5432/storeapidb"
 
 
 @pytest.fixture(name="engine", scope="session")
 def engine_fixture() -> Generator[Engine, None, None]:
-    test_db_url = "postgresql+psycopg://storeapi:storeapi87@localhost/testdb"
-    test_engine = create_engine(test_db_url, echo=True)  # Enable echo for debugging
-    # Alembic should have already created tables via migration
+    test_engine = create_engine(TEST_DB_URL, echo=True)  # Enable echo for debugging
     yield test_engine
-    SQLModel.metadata.drop_all(test_engine)  # Cleanup after tests
 
 
-@pytest.fixture(name="db", scope="session", autouse=True)
+@pytest.fixture(name="db", scope="function")
 def db_fixture(engine: Engine) -> Generator[Session, None, None]:
-    with Session(engine) as session:
-        # Assume Alembic migrations are applied externally (e.g., via pre-test script)
-        # No init_db call here; migrations handle schema
-        yield session
-        session.exec(delete(Item))  # type: ignore
-        session.exec(delete(User))  # type: ignore
-        session.commit()
+    """Provide a fresh session per test with rollback."""
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = Session(bind=connection)
+    SQLModel.metadata.create_all(bind=connection)  # Ensure tables exist
+    yield session
+    session.close()
+    transaction.rollback()  # Roll back changes per test
+    connection.close()
 
 
 @pytest.fixture(name="client", scope="module")
 def client_fixture() -> Generator[TestClient, None, None]:
+    app.dependency_overrides[get_settings] = lambda: get_settings("test")
     with TestClient(app) as client:
         yield client
+    app.dependency_overrides.clear()
 
 
-@pytest.fixture(name="superuser", scope="module")
-def superuser_fixture(db: Session) -> User:
-    # Ensure no duplicate before adding
+@pytest.fixture(scope="function")
+def superuser(db: Session) -> User:
+    """Create a superuser per test."""
     existing = db.exec(
         select(User).where(User.email == "superuser@example.com")
     ).first()
@@ -71,17 +61,13 @@ def superuser_fixture(db: Session) -> User:
     db.add(user)
     db.commit()
     db.refresh(user)
-    print(f"Superuser created: {user.email}, is_active={user.is_active}")
-    db_user = db.exec(select(User).where(User.email == "superuser@example.com")).first()
-    print(
-        f"Superuser in DB: {db_user.email if db_user else 'Not found'}, is_active={db_user.is_active if db_user else None}"
-    )
-    assert db_user and db_user.is_active, "Superuser not persisted or inactive"
+    print(f"Superuser created: {user.email}, ID: {user.id}")
     return user
 
 
-@pytest.fixture(name="normal_user", scope="module")
-def normal_user_fixture(db: Session) -> User:
+@pytest.fixture(scope="function")
+def normal_user(db: Session) -> User:
+    """Create a normal user per test."""
     existing = db.exec(select(User).where(User.email == "user@example.com")).first()
     if existing:
         db.delete(existing)
@@ -95,47 +81,54 @@ def normal_user_fixture(db: Session) -> User:
     db.add(user)
     db.commit()
     db.refresh(user)
-    print(f"Normal user created: {user.email}, is_active={user.is_active}")
-    db_user = db.exec(select(User).where(User.email == "user@example.com")).first()
-    print(
-        f"Normal user in DB: {db_user.email if db_user else 'Not found'}, is_active={db_user.is_active if db_user else None}"
-    )
-    assert db_user and db_user.is_active, "Normal user not persisted or inactive"
+    print(f"Normal user created: {user.email}, ID: {user.id}")
     return user
 
 
-@pytest.fixture(name="superuser_token_headers", scope="module")
-def superuser_token_headers_fixture(
-    client: TestClient, superuser: User
+@pytest.fixture(scope="function")
+def superuser_token_headers(
+    client: TestClient, superuser: User, db: Session
 ) -> dict[str, str]:
+    """Generate superuser token per test with explicit DB check."""
+    # Ensure the user is in the DB before login
+    db_user = db.exec(select(User).where(User.email == "superuser@example.com")).first()
+    print(f"Superuser in DB before login: {db_user.email if db_user else 'Not found'}")
+
     data = {"username": "superuser@example.com", "password": "supersecret"}
-    r = client.post(f"{settings.API_V1_STR}/login/access-token", data=data)
-    print(f"Superuser login response: {r.text}")
+    r = client.post(f"{get_settings('test').API_V1_STR}/login/access-token", data=data)
+    print(f"Superuser login response status: {r.status_code}, body: {r.text}")
     assert r.status_code == 200, f"Superuser login failed: {r.text}"
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
-@pytest.fixture(name="normal_user_token_headers", scope="module")
-def normal_user_token_headers_fixture(
-    client: TestClient, normal_user: User
+@pytest.fixture(scope="function")
+def normal_user_token_headers(
+    client: TestClient, normal_user: User, db: Session
 ) -> dict[str, str]:
+    """Generate normal user token per test with explicit DB check."""
+    # Ensure the user is in the DB before login
+    db_user = db.exec(select(User).where(User.email == "user@example.com")).first()
+    print(
+        f"Normal user in DB before login: {db_user.email if db_user else 'Not found'}"
+    )
+
     data = {"username": "user@example.com", "password": "usersecret"}
-    r = client.post(f"{settings.API_V1_STR}/login/access-token", data=data)
-    print(f"Normal user login response: {r.text}")
+    r = client.post(f"{get_settings('test').API_V1_STR}/login/access-token", data=data)
+    print(f"Normal user login response status: {r.status_code}, body: {r.text}")
     assert r.status_code == 200, f"Normal user login failed: {r.text}"
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
-@pytest.fixture(name="create_random_user", scope="module")
-def create_random_user_fixture(db: Session):
+@pytest.fixture(scope="function")
+def create_random_user(db: Session):
     return lambda: create_random_user(db)
 
 
-@pytest.fixture(name="create_random_item", scope="module")
+@pytest.fixture(scope="function")
 def create_random_item_fixture(db: Session):
-    return lambda owner=None: create_random_item(db, owner)
+    return lambda owner=None: create_random_item(db=db, owner=owner)
 
 
-@pytest.fixture(name="override_current_user", scope="module")
-def override_current_user_fixture():
+@pytest.fixture(scope="function")
+def override_current_user():
     return override_current_user

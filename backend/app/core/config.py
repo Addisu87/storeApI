@@ -1,3 +1,4 @@
+# app/core/config.py
 import secrets
 from functools import lru_cache
 from typing import Annotated, Any, Literal
@@ -34,7 +35,7 @@ class Settings(BaseConfig):
     ADMIN_EMAIL: EmailStr
     ADMIN_PASSWORD: str
     FRONTEND_HOST: str = "http://localhost:5173"
-    BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl], str, BeforeValidator(parse_cors)] = []
+    BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl], BeforeValidator(parse_cors)] = []
 
     @computed_field
     @property
@@ -91,17 +92,26 @@ class ProdConfig(Settings):
 
 class TestConfig(Settings):
     model_config = SettingsConfigDict(env_prefix="TEST_", extra="ignore")
-    POSTGRES_USER: str = "testuser"
-    POSTGRES_PASSWORD: str = "testpass"
-    POSTGRES_DB: str = "testdb"
+    POSTGRES_USER: str = "storeapi"
+    POSTGRES_PASSWORD: str = "storeapi87"
+    POSTGRES_DB: str = "storeapidb"
     DB_FORCE_ROLL_BACK: bool = True
+
+    # Provide defaults for required email fields in test environment
+    ADMIN_EMAIL: EmailStr = "admin@test.com"
+    ADMIN_PASSWORD: str = "testadminpass"
+    MAIL_USERNAME: str = "testuser"
+    MAIL_PASSWORD: str = "testpass"
+    MAIL_FROM: EmailStr = "test@example.com"
+    MAIL_SERVER: str = "smtp.test.com"
+    EMAILS_ENABLED: bool = False  # Disable email sending in tests
 
 
 # Cache the settings
 @lru_cache
-def get_settings(env_state: str):
+def get_settings(env_state: str = BaseConfig().ENV_STATE):
     configs = {"dev": DevConfig, "prod": ProdConfig, "test": TestConfig}
     return configs[env_state]()
 
 
-settings = get_settings(BaseConfig().ENV_STATE)
+settings = get_settings()  # Default to BaseConfig().ENV_STATE ("dev")
