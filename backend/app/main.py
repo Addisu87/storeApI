@@ -7,7 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.core.config import settings
-from app.database.db import Session, engine, init_db
+from app.core.deps import engine
+from app.database.db import Session, init_db
 
 logger = logging.getLogger(__name__)
 
