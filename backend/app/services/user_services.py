@@ -19,13 +19,14 @@ def authenticate_user(session: Session, email: str, password: str) -> User | Non
 
 
 def create_user(session: Session, user_create: UserCreate) -> User:
-    """Create a new user in the database."""
     db_user = User(
         email=user_create.email,
         hashed_password=get_password_hash(user_create.password),
         full_name=user_create.full_name,
-        is_active=True,  # Ensure active by default
-        is_superuser=False,
+        is_active=user_create.is_active if user_create.is_active is not None else True,
+        is_superuser=user_create.is_superuser
+        if user_create.is_superuser is not None
+        else False,
     )
     session.add(db_user)
     session.commit()
