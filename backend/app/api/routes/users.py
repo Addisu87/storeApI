@@ -172,7 +172,14 @@ def update_user(
                 detail="User with this email already exists",
             )
 
-    user = update_user(session=session, user_id=user_id, user_in=user_in)
+    # Fix: Update user directly instead of calling a non-existent function
+    update_data = user_in.model_dump(exclude_unset=True)
+    if "password" in update_data:
+        update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
+    user.sqlmodel_update(update_data)
+    session.add(user)
+    session.commit()
+    session.refresh(user)
     return UserPublic.model_validate(user)
 
 
