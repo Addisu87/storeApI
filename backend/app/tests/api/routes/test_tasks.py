@@ -1,4 +1,3 @@
-# app/tests/api/routes/test_tasks.py
 from unittest.mock import patch
 
 from app.core.config import settings
@@ -23,11 +22,10 @@ def test_send_test_email_endpoint(
         )
         assert response.json() == {"message": "Email has been scheduled to be sent"}
 
-        # Verify the background task was scheduled
         mock_send_email.assert_called_once()
         call_args = mock_send_email.call_args[0]
-        assert call_args[0] == email_to  # email_to
-        assert isinstance(call_args[1], EmailData)  # email_data
+        assert call_args[0] == email_to
+        assert isinstance(call_args[1], EmailData)
         assert call_args[1].subject == f"{settings.PROJECT_NAME} - Test email"
         assert email_to in call_args[1].html_content
 
