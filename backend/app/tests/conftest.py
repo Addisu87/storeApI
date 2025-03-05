@@ -1,14 +1,14 @@
 # app/tests/conftest.py
+import subprocess
 from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.engine import Engine
-from sqlmodel import Session, SQLModel, create_engine, delete
+from sqlmodel import Session, SQLModel, create_engine, delete, select
 
 from app.core.config import settings
 from app.core.security import get_password_hash
-from app.database.db import init_db
 from app.main import app
 from app.models.schemas import Item, User
 from app.tests.helpers import (
@@ -18,19 +18,29 @@ from app.tests.helpers import (
 )
 
 
+@pytest.fixture(scope="session", autouse=True)
+def apply_migrations():
+    # Apply Alembic migrations before tests
+    cmd = "alembic -x db_url=postgresql+psycopg://storeapi:storeapi87@localhost/testdb upgrade head"
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    assert result.returncode == 0, f"Alembic migration failed: {result.stderr}"
+    print("Alembic migrations applied successfully")
+
+
 @pytest.fixture(name="engine", scope="session")
 def engine_fixture() -> Generator[Engine, None, None]:
     test_db_url = "postgresql+psycopg://storeapi:storeapi87@localhost/testdb"
     test_engine = create_engine(test_db_url, echo=True)  # Enable echo for debugging
-    SQLModel.metadata.create_all(test_engine)
+    # Alembic should have already created tables via migration
     yield test_engine
-    SQLModel.metadata.drop_all(test_engine)
+    SQLModel.metadata.drop_all(test_engine)  # Cleanup after tests
 
 
 @pytest.fixture(name="db", scope="session", autouse=True)
 def db_fixture(engine: Engine) -> Generator[Session, None, None]:
     with Session(engine) as session:
-        init_db(session)
+        # Assume Alembic migrations are applied externally (e.g., via pre-test script)
+        # No init_db call here; migrations handle schema
         yield session
         session.exec(delete(Item))  # type: ignore
         session.exec(delete(User))  # type: ignore
@@ -45,6 +55,13 @@ def client_fixture() -> Generator[TestClient, None, None]:
 
 @pytest.fixture(name="superuser", scope="module")
 def superuser_fixture(db: Session) -> User:
+    # Ensure no duplicate before adding
+    existing = db.exec(
+        select(User).where(User.email == "superuser@example.com")
+    ).first()
+    if existing:
+        db.delete(existing)
+        db.commit()
     user = User(
         email="superuser@example.com",
         hashed_password=get_password_hash("supersecret"),
@@ -55,12 +72,20 @@ def superuser_fixture(db: Session) -> User:
     db.commit()
     db.refresh(user)
     print(f"Superuser created: {user.email}, is_active={user.is_active}")
-    assert user.is_active, "Superuser should be active"
+    db_user = db.exec(select(User).where(User.email == "superuser@example.com")).first()
+    print(
+        f"Superuser in DB: {db_user.email if db_user else 'Not found'}, is_active={db_user.is_active if db_user else None}"
+    )
+    assert db_user and db_user.is_active, "Superuser not persisted or inactive"
     return user
 
 
 @pytest.fixture(name="normal_user", scope="module")
 def normal_user_fixture(db: Session) -> User:
+    existing = db.exec(select(User).where(User.email == "user@example.com")).first()
+    if existing:
+        db.delete(existing)
+        db.commit()
     user = User(
         email="user@example.com",
         hashed_password=get_password_hash("usersecret"),
@@ -71,7 +96,11 @@ def normal_user_fixture(db: Session) -> User:
     db.commit()
     db.refresh(user)
     print(f"Normal user created: {user.email}, is_active={user.is_active}")
-    assert user.is_active, "Normal user should be active"
+    db_user = db.exec(select(User).where(User.email == "user@example.com")).first()
+    print(
+        f"Normal user in DB: {db_user.email if db_user else 'Not found'}, is_active={db_user.is_active if db_user else None}"
+    )
+    assert db_user and db_user.is_active, "Normal user not persisted or inactive"
     return user
 
 

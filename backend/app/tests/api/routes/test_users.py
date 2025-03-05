@@ -14,6 +14,7 @@ from sqlmodel import Session, delete
 def test_create_user_success(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
 ):
+    """Test creating a new user successfully."""
     # Ensure unique email by deleting if exists
     existing_user = get_user_by_email(session=db, email="newuser@example.com")
     if existing_user:
@@ -43,6 +44,7 @@ def test_create_user_success(
 def test_create_user_duplicate_email(
     client: TestClient, superuser_token_headers: dict[str, str], normal_user: User
 ):
+    """Test creating a user with a duplicate email."""
     response = client.post(
         f"{settings.API_V1_STR}/users/",
         headers=superuser_token_headers,
@@ -54,6 +56,7 @@ def test_create_user_duplicate_email(
 
 # READ TESTS
 def test_read_user_me(client: TestClient, normal_user_token_headers: dict[str, str]):
+    """Test reading the current user's details."""
     response = client.get(
         f"{settings.API_V1_STR}/users/me", headers=normal_user_token_headers
     )
@@ -65,6 +68,7 @@ def test_read_user_me(client: TestClient, normal_user_token_headers: dict[str, s
 def test_read_user_by_id_self(
     client: TestClient, normal_user: User, normal_user_token_headers: dict[str, str]
 ):
+    """Test reading the current user's details by ID."""
     response = client.get(
         f"{settings.API_V1_STR}/users/{normal_user.id}",
         headers=normal_user_token_headers,
@@ -79,6 +83,7 @@ def test_read_user_by_id_superuser(
     superuser_token_headers: dict[str, str],
     normal_user: User,
 ):
+    """Test reading another user's details by ID as a superuser."""
     response = client.get(
         f"{settings.API_V1_STR}/users/{normal_user.id}",
         headers=superuser_token_headers,
@@ -91,6 +96,7 @@ def test_read_user_by_id_superuser(
 def test_read_user_by_id_forbidden(
     client: TestClient, normal_user_token_headers: dict[str, str], db: Session
 ):
+    """Test reading another user's details by ID as a normal user (forbidden)."""
     other_user = User(
         email="other@example.com",
         hashed_password=get_password_hash("otherpass"),
@@ -112,6 +118,7 @@ def test_read_user_by_id_forbidden(
 def test_read_users_basic(
     client: TestClient, superuser_token_headers: dict[str, str], normal_user: User
 ):
+    """Test reading a list of users."""
     response = client.get(
         f"{settings.API_V1_STR}/users/", headers=superuser_token_headers
     )
@@ -124,6 +131,7 @@ def test_read_users_basic(
 def test_read_users_pagination(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
 ):
+    """Test reading a paginated list of users."""
     # Ensure fresh state by clearing and re-adding users
     db.exec(delete(User))  # type: ignore
     db.commit()
@@ -166,6 +174,7 @@ def test_read_users_pagination(
 def test_update_user_me_success(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ):
+    """Test updating the current user's details successfully."""
     response = client.patch(
         f"{settings.API_V1_STR}/users/me",
         headers=normal_user_token_headers,
@@ -179,6 +188,7 @@ def test_update_user_me_success(
 def test_update_user_me_email_conflict(
     client: TestClient, normal_user_token_headers: dict[str, str], superuser: User
 ):
+    """Test updating the current user's email to an existing email (conflict)."""
     response = client.patch(
         f"{settings.API_V1_STR}/users/me",
         headers=normal_user_token_headers,
@@ -191,6 +201,7 @@ def test_update_user_me_email_conflict(
 def test_update_password_me_success(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ):
+    """Test updating the current user's password successfully."""
     response = client.patch(
         f"{settings.API_V1_STR}/users/me/password",
         headers=normal_user_token_headers,
@@ -203,6 +214,7 @@ def test_update_password_me_success(
 def test_update_password_me_wrong_current(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ):
+    """Test updating the current user's password with the wrong current password."""
     response = client.patch(
         f"{settings.API_V1_STR}/users/me/password",
         headers=normal_user_token_headers,
@@ -215,6 +227,7 @@ def test_update_password_me_wrong_current(
 def test_update_password_me_same_password(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ):
+    """Test updating the current user's password to the same password (error)."""
     response = client.patch(
         f"{settings.API_V1_STR}/users/me/password",
         headers=normal_user_token_headers,
@@ -232,6 +245,7 @@ def test_update_user_success(
     superuser_token_headers: dict[str, str],
     normal_user: User,
 ):
+    """Test updating a user's details successfully as a superuser."""
     response = client.patch(
         f"{settings.API_V1_STR}/users/{normal_user.id}",
         headers=superuser_token_headers,
@@ -245,6 +259,7 @@ def test_update_user_success(
 def test_update_user_not_found(
     client: TestClient, superuser_token_headers: dict[str, str]
 ):
+    """Test updating a non-existent user's details (not found)."""
     nonexistent_id = uuid.uuid4()
     response = client.patch(
         f"{settings.API_V1_STR}/users/{nonexistent_id}",
@@ -262,6 +277,7 @@ def test_delete_user_me_normal(
     normal_user_token_headers: dict[str, str],
     db: Session,
 ):
+    """Test deleting the current user's account as a normal user."""
     item = Item(title="Test Item", description="Test", owner_id=normal_user.id)
     db.add(item)
     db.commit()
@@ -277,6 +293,7 @@ def test_delete_user_me_normal(
 def test_delete_user_me_superuser(
     client: TestClient, superuser_token_headers: dict[str, str]
 ):
+    """Test deleting the current user's account as a superuser (forbidden)."""
     response = client.delete(
         f"{settings.API_V1_STR}/users/me", headers=superuser_token_headers
     )
@@ -290,6 +307,7 @@ def test_delete_user_success(
     normal_user: User,
     db: Session,
 ):
+    """Test deleting a user's account successfully as a superuser."""
     item = Item(title="Test Item", description="Test", owner_id=normal_user.id)
     db.add(item)
     db.commit()
@@ -306,6 +324,7 @@ def test_delete_user_success(
 def test_delete_user_self_forbidden(
     client: TestClient, superuser: User, superuser_token_headers: dict[str, str]
 ):
+    """Test deleting the current user's account as a superuser (forbidden)."""
     response = client.delete(
         f"{settings.API_V1_STR}/users/{superuser.id}",
         headers=superuser_token_headers,

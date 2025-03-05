@@ -6,10 +6,12 @@ from app.models.schemas import User, UserCreate, UserUpdate
 
 
 def get_user_by_email(session: Session, email: str) -> User | None:
+    """Retrieve a user by their email address."""
     return session.exec(select(User).where(User.email == email)).first()
 
 
 def authenticate_user(session: Session, email: str, password: str) -> User | None:
+    """Authenticate a user by their email and password."""
     user = get_user_by_email(session, email)
     if not user or not verify_password(password, user.hashed_password):
         return None
@@ -17,6 +19,7 @@ def authenticate_user(session: Session, email: str, password: str) -> User | Non
 
 
 def create_user(session: Session, user_create: UserCreate) -> User:
+    """Create a new user in the database."""
     db_user = User(
         email=user_create.email,
         hashed_password=get_password_hash(user_create.password),
@@ -31,6 +34,7 @@ def create_user(session: Session, user_create: UserCreate) -> User:
 
 
 def update_user(session: Session, db_user: User, user_in: UserUpdate) -> User:
+    """Update an existing user in the database."""
     user_data = user_in.model_dump(exclude_unset=True)
     if "password" in user_data:
         user_data["hashed_password"] = get_password_hash(user_data.pop("password"))
