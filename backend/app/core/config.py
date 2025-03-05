@@ -64,6 +64,10 @@ class Settings(BaseConfig):
             path=self.POSTGRES_DB,
         )
 
+    def get_db_uri_string(self) -> str:
+        """Return SQLALCHEMY_DATABASE_URI as a string for SQLAlchemy."""
+        return str(self.SQLALCHEMY_DATABASE_URI)
+
     # FastAPI-Mail configuration
     MAIL_USERNAME: str
     MAIL_PASSWORD: str

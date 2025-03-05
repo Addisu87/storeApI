@@ -13,16 +13,18 @@ from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
-from sqlmodel import Session
+from sqlmodel import Session, create_engine
 
 from app.core.config import settings
-from app.database.db import engine
 from app.models.schemas import TokenPayload, User
 
 # Declaring OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token",
 )
+
+# Create a synchronous database engine
+engine = create_engine(settings.get_db_uri_string(), echo=True)
 
 
 # Create a Session Dependency
@@ -71,18 +73,8 @@ CurrentUser = Annotated[User, Security(get_current_user)]
 
 
 async def get_current_active_superuser(current_user: CurrentUser) -> User:
-    """Retrieve the current active superuser.
+    """Retrieve the current active superuser."""
 
-    Args:
-        current_user (CurrentUser): The current user object.
-
-    Returns:
-        User: The current active user object.
-
-    Raises:
-        HTTPException: If the current user is not a superuser.
-
-    """
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
