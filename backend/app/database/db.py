@@ -1,18 +1,12 @@
 import logging
 
-from sqlmodel import Session, create_engine, select
+from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.models.schemas import User, UserCreate
 from app.services.user_services import create_user
 
 logger = logging.getLogger(__name__)
-
-# Create a synchronous database engine
-engine = create_engine(
-    str(settings.SQLALCHEMY_DATABASE_URI),
-    echo=True,  # Enable SQL query logging for debugging
-)
 
 
 # make sure all SQLModel models are imported (app.models.schemas) before initializing DB
