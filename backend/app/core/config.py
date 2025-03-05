@@ -94,17 +94,16 @@ class TestConfig(Settings):
     model_config = SettingsConfigDict(env_prefix="TEST_", extra="ignore")
     POSTGRES_USER: str = "storeapi"
     POSTGRES_PASSWORD: str = "storeapi87"
-    POSTGRES_DB: str = "storeapidb"
+    POSTGRES_DB: str = "testdb"  # Explicitly set to testdb
     DB_FORCE_ROLL_BACK: bool = True
 
-    # Provide defaults for required email fields in test environment
     ADMIN_EMAIL: EmailStr = "admin@test.com"
     ADMIN_PASSWORD: str = "testadminpass"
     MAIL_USERNAME: str = "testuser"
     MAIL_PASSWORD: str = "testpass"
     MAIL_FROM: EmailStr = "test@example.com"
     MAIL_SERVER: str = "smtp.test.com"
-    EMAILS_ENABLED: bool = False  # Disable email sending in tests
+    EMAILS_ENABLED: bool = False
 
 
 # Cache the settings
