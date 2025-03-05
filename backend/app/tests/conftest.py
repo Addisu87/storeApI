@@ -13,7 +13,6 @@ from app.main import app
 from app.models.schemas import User
 from app.tests.helpers import create_random_item
 
-# Path to your Alembic configuration file
 ALEMBIC_INI_PATH = "alembic.ini"
 
 
@@ -22,20 +21,20 @@ def engine_fixture() -> Generator[Engine, None, None]:
     test_settings = get_settings("test")
     test_engine = create_engine(test_settings.get_db_uri_string(), echo=True)
 
-    # Apply Alembic migrations to testdb
     alembic_cfg = Config(ALEMBIC_INI_PATH)
     alembic_cfg.set_main_option("sqlalchemy.url", test_settings.get_db_uri_string())
-    command.upgrade(alembic_cfg, "head")  # Upgrade to the latest migration
+    try:
+        command.upgrade(alembic_cfg, "head")
+        print("Alembic migrations applied successfully")
+    except Exception as e:
+        print(f"Failed to apply Alembic migrations: {e}")
+        raise
 
     yield test_engine
-
-    # Optional: Downgrade or drop tables after tests (not required with rollback)
-    # command.downgrade(alembic_cfg, "base")
 
 
 @pytest.fixture(name="db", scope="function")
 def db_fixture(engine: Engine) -> Generator[Session, None, None]:
-    """Provide a fresh session per test with rollback."""
     connection = engine.connect()
     transaction = connection.begin()
     session = Session(bind=connection)
@@ -55,7 +54,6 @@ def client_fixture() -> Generator[TestClient, None, None]:
 
 @pytest.fixture(scope="function")
 def superuser(db: Session) -> User:
-    """Create a superuser per test."""
     user = User(
         email="superuser@example.com",
         hashed_password=get_password_hash("supersecret"),
@@ -70,7 +68,6 @@ def superuser(db: Session) -> User:
 
 @pytest.fixture(scope="function")
 def normal_user(db: Session) -> User:
-    """Create a normal user per test."""
     user = User(
         email="user@example.com",
         hashed_password=get_password_hash("usersecret"),
@@ -87,7 +84,6 @@ def normal_user(db: Session) -> User:
 def superuser_token_headers(
     client: TestClient, superuser: User, db: Session
 ) -> dict[str, str]:
-    """Generate superuser token per test."""
     data = {"username": "superuser@example.com", "password": "supersecret"}
     r = client.post(f"{get_settings('test').API_V1_STR}/login/access-token", data=data)
     assert r.status_code == 200, f"Superuser login failed: {r.text}"
@@ -98,7 +94,6 @@ def superuser_token_headers(
 def normal_user_token_headers(
     client: TestClient, normal_user: User, db: Session
 ) -> dict[str, str]:
-    """Generate normal user token per test."""
     data = {"username": "user@example.com", "password": "usersecret"}
     r = client.post(f"{get_settings('test').API_V1_STR}/login/access-token", data=data)
     assert r.status_code == 200, f"Normal user login failed: {r.text}"
