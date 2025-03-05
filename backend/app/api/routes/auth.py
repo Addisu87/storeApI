@@ -1,4 +1,5 @@
 # app/api/routes/auth.py
+
 import logging
 from datetime import timedelta
 from typing import Annotated, Any
@@ -39,6 +40,7 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
         )
     user_create = UserCreate.model_validate(user_in)
     user = create_user(session=session, user_create=user_create)
+    logger.debug(f"New user registered: {user.email}")
     return user
 
 
@@ -48,16 +50,19 @@ async def login_access_token(
     session: SessionDep,
 ) -> Token:
     """OAuth2 compatible token login, get an access token for future requests."""
+    logger.debug(f"Attempting to log in user with email: {form_data.username}")
     auth_user = authenticate_user(
         session=session, email=form_data.username, password=form_data.password
     )
 
     if not auth_user:
+        logger.error(f"Login failed for user: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
         )
     if not auth_user.is_active:
+        logger.error(f"Inactive user attempted to log in: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Inactive user",
@@ -67,6 +72,7 @@ async def login_access_token(
         auth_user.id,
         expires_delta=access_token_expires,
     )
+    logger.debug(f"Login successful for user: {form_data.username}")
     return Token(access_token=access_token, token_type="bearer")
 
 

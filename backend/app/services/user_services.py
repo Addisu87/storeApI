@@ -1,8 +1,12 @@
 # app/services/user_services.py
+import logging
+
 from sqlmodel import Session, select
 
 from app.core.security import get_password_hash, verify_password
 from app.models.schemas import User, UserCreate, UserUpdate
+
+logger = logging.getLogger(__name__)
 
 
 def get_user_by_email(session: Session, email: str) -> User | None:
@@ -11,27 +15,34 @@ def get_user_by_email(session: Session, email: str) -> User | None:
 
 
 def authenticate_user(session: Session, email: str, password: str) -> User | None:
-    """Authenticate a user by their email and password."""
-    user = get_user_by_email(session, email)
-    if not user or not verify_password(password, user.hashed_password):
+    """Authenticate a user by email and password."""
+    logger.debug(f"Authenticating user with email: {email}")
+    user = session.exec(select(User).where(User.email == email)).first()
+    if not user:
+        logger.debug(f"User not found: {email}")
         return None
+    if not verify_password(password, user.hashed_password):
+        logger.debug(f"Password verification failed for user: {email}")
+        return None
+    logger.debug(f"User authenticated successfully: {email}")
     return user
 
 
 def create_user(session: Session, user_create: UserCreate) -> User:
-    db_user = User(
+    """Create a new user."""
+    logger.debug(f"Creating user with email: {user_create.email}")
+    hashed_password = get_password_hash(user_create.password)
+    logger.debug(f"Hashed password: {hashed_password}")
+    user = User(
         email=user_create.email,
-        hashed_password=get_password_hash(user_create.password),
-        full_name=user_create.full_name,
-        is_active=user_create.is_active if user_create.is_active is not None else True,
-        is_superuser=user_create.is_superuser
-        if user_create.is_superuser is not None
-        else False,
+        hashed_password=hashed_password,
+        is_active=user_create.is_active,
+        is_superuser=user_create.is_superuser,
     )
-    session.add(db_user)
+    session.add(user)
     session.commit()
-    session.refresh(db_user)
-    return db_user
+    session.refresh(user)
+    return user
 
 
 def update_user(session: Session, db_user: User, user_in: UserUpdate) -> User:

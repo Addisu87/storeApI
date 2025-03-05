@@ -6,11 +6,11 @@ from app.core.config import settings
 from app.models.schemas import User, UserCreate
 from app.services.user_services import create_user
 
-logger = logging.getLogger(__name__)
-
-
 # make sure all SQLModel models are imported (app.models.schemas) before initializing DB
 # otherwise, SQLModel might fail to initialize relationships properly
+
+
+logger = logging.getLogger(__name__)
 
 
 def init_db(session: Session) -> None:
@@ -19,7 +19,6 @@ def init_db(session: Session) -> None:
         # Test the database connection
         session.exec(select(1))
         logger.info("Database connection successful")
-
         # Check if the admin user exists
         user = session.exec(
             select(User).where(User.email == settings.ADMIN_EMAIL)
@@ -36,7 +35,7 @@ def init_db(session: Session) -> None:
             )
             user = create_user(session=session, user_create=user_in)
             logger.info(f"Admin user created: {user}")
-
+            logger.debug(f"Admin user hashed password: {user.hashed_password}")
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
         raise e

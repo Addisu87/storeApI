@@ -1,3 +1,4 @@
+import logging
 import uuid
 from typing import Annotated
 
@@ -20,6 +21,8 @@ from app.models.schemas import (
 )
 from app.services.email_services import generate_new_account_email, send_email
 from app.services.user_services import create_user, get_user_by_email
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
