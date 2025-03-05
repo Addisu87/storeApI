@@ -1,5 +1,4 @@
 # app/tests/api/routes/test_users.py
-
 import uuid
 from unittest.mock import patch
 
@@ -8,8 +7,6 @@ from app.core.security import get_password_hash
 from app.models.schemas import Item, User
 from fastapi.testclient import TestClient
 from sqlmodel import Session
-
-# USER CRUD TESTS ORGANIZED BY CRUD OPERATION
 
 
 # CREATE TESTS

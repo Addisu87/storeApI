@@ -19,10 +19,7 @@ from app.models.schemas import (
     UserUpdateMe,
 )
 from app.services.email_services import generate_new_account_email, send_email
-from app.services.user_services import (
-    create_user,
-    get_user_by_email,
-)
+from app.services.user_services import create_user, get_user_by_email
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -86,12 +83,15 @@ def read_user_by_id(
     return UserPublic.model_validate(user)
 
 
-@router.get("/", response_model=UsersPublic)  # Fixed response model
+@router.get(
+    "/",
+    response_model=UsersPublic,
+    dependencies=[Depends(get_current_active_superuser)],
+)
 def read_users(
     session: SessionDep,
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
-    current_user: CurrentUser = Depends(get_current_active_superuser),
 ) -> UsersPublic:
     """Retrieve a paginated list of users (superuser only)."""
     count = session.exec(select(func.count()).select_from(User)).one()
