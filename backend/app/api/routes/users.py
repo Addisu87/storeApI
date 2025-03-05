@@ -19,27 +19,34 @@ from app.models.schemas import (
     UserUpdateMe,
 )
 from app.services.email_services import generate_new_account_email, send_email
-from app.services.user_services import get_user_by_email
+from app.services.user_services import (
+    create_user,
+    get_user_by_email,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+# CREATE OPERATIONS
 @router.post(
     "/",
     response_model=UserPublic,
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(get_current_active_superuser)],
 )
-def create_user(*, session: SessionDep, user_in: UserCreate) -> UsersPublic:
+def create_user_route(
+    session: SessionDep,
+    user_in: UserCreate,
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+) -> UserPublic:
     """Create a new user."""
-    user = get_user_by_email(session=session, email=user_in.email)
-    if user:
+    if get_user_by_email(session=session, email=user_in.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The user with this email already exists!",
         )
 
-    user = create_user(session=session, user_in=user_in)
+    user = create_user(session=session, user_create=user_in)
     if settings.emails_enabled and user_in.email:
         email_data = generate_new_account_email(
             email_to=user_in.email, username=user_in.email, password=user_in.password
@@ -47,22 +54,59 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> UsersPublic:
         send_email(
             email_to=user_in.email,
             email_data=email_data,
-            background_tasks=BackgroundTasks(),
+            background_tasks=background_tasks,
         )
-    return user
+    return UserPublic.model_validate(user)
 
 
+# READ OPERATIONS
 @router.get("/me", response_model=UserPublic)
 def read_user_me(current_user: CurrentUser) -> UserPublic:
     """Get current user."""
     return UserPublic.model_validate(current_user)
 
 
-@router.patch("/me", response_model=UserPublic)
-def update_user_me(
-    user_in: UserUpdateMe,
+@router.get("/{user_id}", response_model=UserPublic)
+def read_user_by_id(
+    user_id: uuid.UUID,
     session: SessionDep,
     current_user: CurrentUser,
+) -> UserPublic:
+    """Get a specific user by ID."""
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    if user.id != current_user.id and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient privileges",
+        )
+    return UserPublic.model_validate(user)
+
+
+@router.get("/", response_model=UsersPublic)  # Fixed response model
+def read_users(
+    session: SessionDep,
+    skip: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    current_user: CurrentUser = Depends(get_current_active_superuser),
+) -> UsersPublic:
+    """Retrieve a paginated list of users (superuser only)."""
+    count = session.exec(select(func.count()).select_from(User)).one()
+    users = session.exec(select(User).offset(skip).limit(limit)).all()
+    return UsersPublic(
+        data=[UserPublic.model_validate(user) for user in users], count=count
+    )
+
+
+# UPDATE OPERATIONS
+@router.patch("/me", response_model=UserPublic)
+def update_user_me(
+    session: SessionDep,
+    current_user: CurrentUser,
+    user_in: UserUpdateMe,
 ) -> UserPublic:
     """Update own user details."""
     if user_in.email and user_in.email != current_user.email:
@@ -72,19 +116,19 @@ def update_user_me(
                 detail="User with this email already exists",
             )
 
-    user_data = user_in.model_dump(exclude_unset=True)
-    current_user.sqlmodel_update(user_data)
-    session.add(current_user)
-    session.commit()
-    session.refresh(current_user)
+    if user_in.model_dump(exclude_unset=True):  # Only update if there’s data
+        current_user.sqlmodel_update(user_in.model_dump(exclude_unset=True))
+        session.add(current_user)
+        session.commit()
+        session.refresh(current_user)
     return UserPublic.model_validate(current_user)
 
 
 @router.patch("/me/password", response_model=Message)
 def update_password_me(
-    body: UpdatePassword,
     session: SessionDep,
     current_user: CurrentUser,
+    body: UpdatePassword,
 ) -> Message:
     """Update own password."""
     if not verify_password(body.current_password, current_user.hashed_password):
@@ -104,66 +148,15 @@ def update_password_me(
     return Message(message="Password updated successfully")
 
 
-@router.delete("/me", response_model=Message)
-def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Message:
-    """Delete own user account."""
-    if current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Superusers cannot delete themselves",
-        )
-
-    statement = delete(Item).where(col(Item.owner_id) == current_user.id)
-    session.exec(statement)  # type: ignore
-    session.delete(current_user)
-    session.commit()
-    return Message(message="User deleted successfully")
-
-
-@router.get("/", response_model=list[UsersPublic])
-def read_users(
-    session: SessionDep,
-    skip: Annotated[int, Query(ge=0)] = 0,
-    limit: Annotated[int, Query(ge=1, le=100)] = 100,
-) -> UsersPublic:
-    """Retrieve a paginated list of users."""
-
-    count_statement = select(func.count()).select_from(User)
-    count = session.exec(count_statement).one()
-
-    statement = select(User).offset(skip).limit(limit)
-    users = session.exec(statement).all()
-    return UsersPublic(
-        data=[UserPublic.model_validate(user) for user in users], count=count
-    )
-
-
-@router.get("/{user_id}", response_model=UserPublic)
-def read_user_by_id(
-    user_id: uuid.UUID,
-    session: SessionDep,
-    current_user: CurrentUser,
-) -> UserPublic:
-    """Get a specific user by ID."""
-    user = session.get(User, user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
-
-    if user.id == current_user.id or current_user.is_superuser:
-        return UserPublic.model_validate(user)
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Insufficient privileges",
-    )
-
-
-@router.patch("/{user_id}", response_model=UserPublic)
+@router.patch(
+    "/{user_id}",
+    response_model=UserPublic,
+    dependencies=[Depends(get_current_active_superuser)],
+)
 def update_user(
     user_id: uuid.UUID,
-    user_in: UserUpdate,
     session: SessionDep,
+    user_in: UserUpdate,
 ) -> UserPublic:
     """Update a user by ID (superuser only)."""
     user = session.get(User, user_id)
@@ -183,14 +176,37 @@ def update_user(
     if user_in.password:
         user_data["hashed_password"] = get_password_hash(user_in.password)
         del user_data["password"]
-    user.sqlmodel_update(user_data)
-    session.add(user)
-    session.commit()
-    session.refresh(user)
+
+    if user_data:  # Only update if there’s data
+        user.sqlmodel_update(user_data)
+        session.add(user)
+        session.commit()
+        session.refresh(user)
     return UserPublic.model_validate(user)
 
 
-@router.delete("/{user_id}", response_model=Message)
+# DELETE OPERATIONS
+@router.delete("/me", response_model=Message)
+def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Message:
+    """Delete own user account."""
+    if current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Superusers cannot delete themselves",
+        )
+
+    statement = delete(Item).where(col(Item.owner_id) == current_user.id)
+    session.exec(statement)  # type: ignore
+    session.delete(current_user)
+    session.commit()
+    return Message(message="User deleted successfully")
+
+
+@router.delete(
+    "/{user_id}",
+    response_model=Message,
+    dependencies=[Depends(get_current_active_superuser)],
+)
 def delete_user(
     user_id: uuid.UUID,
     session: SessionDep,
@@ -207,6 +223,7 @@ def delete_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Superusers cannot delete themselves",
         )
+
     statement = delete(Item).where(col(Item.owner_id) == user_id)
     session.exec(statement)  # type: ignore
     session.delete(user)

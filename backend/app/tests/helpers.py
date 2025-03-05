@@ -23,7 +23,7 @@ def random_email() -> str:
 
 def superuser_token_headers(client: TestClient) -> Dict[str, str]:
     """Get authorization headers for the superuser."""
-    login_data = {"username": settings.ADMIN_USER, "password": settings.ADMIN_PASSWORD}
+    login_data = {"username": settings.ADMIN_EMAIL, "password": settings.ADMIN_PASSWORD}
     r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
     tokens = r.json()
     a_token = tokens["access_token"]

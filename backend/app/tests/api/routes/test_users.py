@@ -1,14 +1,18 @@
+# app/tests/api/routes/test_users.py
+
 import uuid
 from unittest.mock import patch
 
 from app.core.config import settings
+from app.core.security import get_password_hash
 from app.models.schemas import Item, User
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+# USER CRUD TESTS ORGANIZED BY CRUD OPERATION
 
-# USER CRUD TESTS
-# Create User
+
+# CREATE TESTS
 def test_create_user_success(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
 ):
@@ -42,43 +46,7 @@ def test_create_user_duplicate_email(
     assert response.json()["detail"] == "The user with this email already exists!"
 
 
-# Read User
-def test_read_users_basic(
-    client: TestClient, superuser_token_headers: dict[str, str], normal_user: User
-):
-    response = client.get(
-        f"{settings.API_V1_STR}/users/", headers=superuser_token_headers
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["count"] >= 2
-    assert len(data["data"]) >= 2
-
-
-def test_read_users_pagination(
-    client: TestClient, superuser_token_headers: dict[str, str], db: Session
-):
-    for i in range(5):
-        db.add(
-            User(
-                email=f"user{i}@example.com",
-                hashed_password="$2b$12$...",  # Use a real hashed password or helper
-                is_superuser=False,
-                is_active=True,
-            )
-        )
-    db.commit()
-
-    response = client.get(
-        f"{settings.API_V1_STR}/users/?skip=2&limit=2",
-        headers=superuser_token_headers,
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["count"] >= 7
-    assert len(data["data"]) == 2
-
-
+# READ TESTS
 def test_read_user_me(client: TestClient, normal_user_token_headers: dict[str, str]):
     response = client.get(
         f"{settings.API_V1_STR}/users/me", headers=normal_user_token_headers
@@ -119,7 +87,7 @@ def test_read_user_by_id_forbidden(
 ):
     other_user = User(
         email="other@example.com",
-        hashed_password="$2b$12$...",  # Use a real hashed password or helper
+        hashed_password=get_password_hash("otherpass"),
         is_superuser=False,
         is_active=True,
     )
@@ -135,7 +103,43 @@ def test_read_user_by_id_forbidden(
     assert response.json()["detail"] == "Insufficient privileges"
 
 
-# Update User
+def test_read_users_basic(
+    client: TestClient, superuser_token_headers: dict[str, str], normal_user: User
+):
+    response = client.get(
+        f"{settings.API_V1_STR}/users/", headers=superuser_token_headers
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["count"] >= 2
+    assert len(data["data"]) >= 2
+
+
+def test_read_users_pagination(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+):
+    for i in range(5):
+        db.add(
+            User(
+                email=f"user{i}@example.com",
+                hashed_password=get_password_hash("testpass"),
+                is_superuser=False,
+                is_active=True,
+            )
+        )
+    db.commit()
+
+    response = client.get(
+        f"{settings.API_V1_STR}/users/?skip=2&limit=2",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["count"] >= 7  # superuser, normal_user, +5 new users
+    assert len(data["data"]) == 2
+
+
+# UPDATE TESTS
 def test_update_user_me_success(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ):
@@ -228,7 +232,7 @@ def test_update_user_not_found(
     assert response.json()["detail"] == "User not found"
 
 
-# Delete User
+# DELETE TESTS
 def test_delete_user_me_normal(
     client: TestClient,
     normal_user: User,
