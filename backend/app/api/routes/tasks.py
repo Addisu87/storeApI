@@ -8,7 +8,7 @@ from app.services.email_services import generate_test_email, send_email
 router = APIRouter()
 
 
-@router.post("/send-test-email/", status_code=status.HTTP_201_CREATED)
+@router.post("/send-test-email", status_code=status.HTTP_201_CREATED)
 async def send_test_email(
     background_tasks: BackgroundTasks,
     email_to: EmailStr = Body(..., embed=True),  # Embed email_to in a JSON object
@@ -19,6 +19,6 @@ async def send_test_email(
     return {"message": "Email has been scheduled to be sent"}
 
 
-@router.get("/health-check/")
+@router.get("/health-check")
 async def health_check() -> bool:
     return True

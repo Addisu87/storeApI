@@ -5,7 +5,6 @@ from datetime import timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 
 from app.core.deps import CurrentUser, SessionDep, get_db
@@ -49,18 +48,18 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
 
 @router.post("/login/access-token", response_model=Token)
 def login_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    login_data: UserRegister,
     db: Session = Depends(get_db),
 ) -> Token:
     """
-    OAuth2-compatible token login.
+    Token login accepting JSON input.
     Authenticate the user and return an access token for future requests.
     """
     # Fetch the user from the database
-    user = db.exec(select(User).where(User.email == form_data.username)).first()
+    user = db.exec(select(User).where(User.email == login_data.email)).first()
 
     # Verify the user's credentials
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

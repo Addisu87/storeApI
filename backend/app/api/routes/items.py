@@ -98,4 +98,4 @@ def delete_item(item_id: UUID, session: SessionDep, current_user: CurrentUser):
         )
     session.delete(item)
     session.commit()
-    return {"ok": True}
+    return {"message": "Item deleted"}
