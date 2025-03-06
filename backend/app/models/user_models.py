@@ -51,6 +51,8 @@ class UpdatePassword(SQLModel):
 
 # Database model
 class User(UserBase, table=True):
+    """Use string-based forward reference"""
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     items: list["Item"] = Relationship(
