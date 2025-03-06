@@ -31,18 +31,17 @@ def authenticate_user(session: Session, email: str, password: str) -> User | Non
 def create_user(session: Session, user_create: UserCreate) -> User:
     """Create a new user."""
     logger.debug(f"Creating user with email: {user_create.email}")
-    hashed_password = get_password_hash(user_create.password)
-    logger.debug(f"Hashed password: {hashed_password}")
-    user = User(
+    db_user = User(
         email=user_create.email,
-        hashed_password=hashed_password,
+        hashed_password=get_password_hash(user_create.password),
         is_active=user_create.is_active,
         is_superuser=user_create.is_superuser,
+        full_name=user_create.full_name,
     )
-    session.add(user)
+    session.add(db_user)
     session.commit()
-    session.refresh(user)
-    return user
+    session.refresh(db_user)
+    return db_user
 
 
 def update_user(session: Session, db_user: User, user_in: UserUpdate) -> User:
@@ -50,7 +49,6 @@ def update_user(session: Session, db_user: User, user_in: UserUpdate) -> User:
     user_data = user_in.model_dump(exclude_unset=True)
     if "password" in user_data:
         user_data["hashed_password"] = get_password_hash(user_data.pop("password"))
-    # Only update fields provided, don’t touch is_active unless specified
     db_user.sqlmodel_update(user_data)
     session.add(db_user)
     session.commit()

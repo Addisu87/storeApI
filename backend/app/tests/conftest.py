@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, create_engine, select
 
-from app.core.config import get_settings
+from app.core.config import get_settings, settings
 from app.core.security import get_password_hash
 from app.main import app
 from app.models.schemas import User
@@ -123,7 +123,15 @@ def normal_user(engine: Engine) -> User:
             select(User).where(User.email == "user@example.com")
         ).first()
         if not user:
-            raise Exception("Normal user not found in database")
+            user = User(
+                email="user@example.com",
+                hashed_password=get_password_hash("usersecret"),  # Hash the password
+                is_superuser=False,
+                is_active=True,
+            )
+            session.add(user)
+            session.commit()
+            session.refresh(user)
         return user
 
 
@@ -138,11 +146,12 @@ def superuser_token_headers(client: TestClient, superuser: User) -> dict[str, st
 
 @pytest.fixture(scope="module")
 def normal_user_token_headers(client: TestClient, normal_user: User) -> dict[str, str]:
-    data = {"username": "user@example.com", "password": "usersecret"}
-    r = client.post(f"{get_settings('test').API_V1_STR}/login/access-token", data=data)
+    data = {"email": "user@example.com", "password": "usersecret"}
+    r = client.post(f"{settings.API_V1_STR}/login/access-token", json=data)
     print(f"Normal user login response: {r.status_code}, {r.text}")
     assert r.status_code == 200, f"Normal user login failed: {r.text}"
-    return {"Authorization": f"Bearer {r.json()['access_token']}"}
+    token = r.json()["access_token"]
+    return {"Authorization": f"Bearer {token}", "id": str(normal_user.id)}
 
 
 @pytest.fixture(scope="function")
