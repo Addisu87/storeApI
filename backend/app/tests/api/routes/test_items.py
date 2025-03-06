@@ -193,7 +193,7 @@ def test_delete_item_success(
         f"{settings.API_V1_STR}/items/{item.id}", headers=normal_user_token_headers
     )
     assert response.status_code == 200
-    assert response.json() == {"ok": True}
+    assert response.json() == {"message": "Item deleted"}
     assert db.get(Item, item.id) is None
 
 
