@@ -3,7 +3,7 @@ import logging
 from sqlmodel import Session, select
 
 from app.core.config import settings
-from app.models.schemas import User, UserCreate
+from app.models.user_models import User, UserCreate
 from app.services.user_services import create_user
 
 # make sure all SQLModel models are imported (app.models.schemas) before initializing DB

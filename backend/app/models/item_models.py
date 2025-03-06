@@ -1,12 +1,12 @@
+# item_models.py
 import uuid
-from typing import List
 
 from sqlmodel import Field, Relationship, SQLModel
 
 
-# Forward reference for User
+# Forward reference for User (to avoid circular imports)
 class User(SQLModel):
-    __tablename__ = "user"
+    __tablename__ = "user"  # type: ignore
     id: uuid.UUID
 
 
@@ -23,7 +23,7 @@ class ItemCreate(ItemBase):
 
 # Properties to receive on item update
 class ItemUpdate(ItemBase):
-    title: str | None = Field(default=None, min_length=1, max_length=255)
+    title: str | None = Field(default=None, min_length=1, max_length=255)  # type: ignore
 
 
 # Database model
@@ -33,7 +33,7 @@ class Item(ItemBase, table=True):
     owner_id: uuid.UUID = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
-    owner: User | None = Relationship(back_populates="items")
+    owner: "User | None" = Relationship(back_populates="items")
 
 
 # Properties to return via API
@@ -43,5 +43,5 @@ class ItemPublic(ItemBase):
 
 
 class ItemsPublic(SQLModel):
-    data: List[ItemPublic]
+    data: list[ItemPublic]
     count: int

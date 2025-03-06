@@ -14,15 +14,9 @@ from app.core.security import (
     get_password_hash,
     verify_password,
 )
-from app.models.schemas import (
-    Message,
-    NewPassword,
-    Token,
-    User,
-    UserCreate,
-    UserPublic,
-    UserRegister,
-)
+from app.models.auth_models import NewPassword, Token
+from app.models.generic_models import Message
+from app.models.user_models import User, UserCreate, UserPublic, UserRegister
 from app.services.password_services import verify_password_reset_token
 from app.services.user_services import create_user, get_user_by_email
 

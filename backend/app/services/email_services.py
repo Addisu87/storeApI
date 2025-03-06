@@ -9,7 +9,7 @@ from mjml import mjml2html
 from pydantic import EmailStr
 
 from app.core.config import settings
-from app.models.schemas import EmailData
+from app.models.email_models import EmailData
 
 logger = logging.getLogger(__name__)
 

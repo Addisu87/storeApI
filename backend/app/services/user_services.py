@@ -4,7 +4,7 @@ import logging
 from sqlmodel import Session, select
 
 from app.core.security import get_password_hash, verify_password
-from app.models.schemas import User, UserCreate, UserUpdate
+from app.models.user_models import User, UserCreate, UserUpdate
 
 logger = logging.getLogger(__name__)
 

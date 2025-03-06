@@ -4,7 +4,6 @@
 # Have shared logic (the same code logic again and again).
 # Share database connections.
 # Enforce security, authentication, role requirements, etc.
-
 from collections.abc import Generator
 from typing import Annotated
 
@@ -16,7 +15,8 @@ from pydantic import ValidationError
 from sqlmodel import Session, create_engine
 
 from app.core.config import settings
-from app.models.schemas import TokenPayload, User
+from app.models.auth_models import TokenPayload
+from app.models.user_models import User
 
 # Declaring OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(
@@ -24,11 +24,6 @@ oauth2_scheme = OAuth2PasswordBearer(
 )
 
 # Create a synchronous database engine
-engine = create_engine(settings.get_db_uri_string(), echo=True)
-
-
-# Create a Session Dependency
-
 engine = create_engine(settings.get_db_uri_string(), echo=True)
 
 
@@ -46,7 +41,6 @@ TokenDep = Annotated[str, Depends(oauth2_scheme)]
 # Create a get_current_user dependency
 async def get_current_user(session: SessionDep, token: TokenDep) -> User:
     """Retrieve the current user from the database."""
-
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
@@ -78,7 +72,6 @@ CurrentUser = Annotated[User, Security(get_current_user)]
 
 async def get_current_active_superuser(current_user: CurrentUser) -> User:
     """Retrieve the current active superuser."""
-
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

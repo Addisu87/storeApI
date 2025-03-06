@@ -5,7 +5,7 @@ import pytest
 from app.core.deps import get_current_active_superuser
 from app.core.security import get_password_hash
 from app.main import app
-from app.models.schemas import User
+from app.models.user_models import User
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 
