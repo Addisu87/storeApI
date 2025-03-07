@@ -24,7 +24,9 @@ def create_random_user(db: Session) -> User:
     email = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=email, password=password)
-    return create_user(session=db, user_create=user_in)
+    user = create_user(session=db, user_create=user_in)
+    user.password = password  # Store plaintext for test login
+    return user
 
 
 def create_random_item(db: Session, owner: User | None = None) -> Item:

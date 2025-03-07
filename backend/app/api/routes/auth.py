@@ -4,10 +4,9 @@ import logging
 from datetime import timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from fastapi import APIRouter, HTTPException, status
 
-from app.core.deps import CurrentUser, SessionDep, get_db
+from app.core.deps import CurrentUser, SessionDep
 from app.core.security import (
     access_token_expire_minutes,
     create_access_token,
@@ -16,7 +15,7 @@ from app.core.security import (
 )
 from app.models.auth_models import NewPassword, Token
 from app.models.generic_models import Message
-from app.models.user_models import User, UserCreate, UserPublic, UserRegister
+from app.models.user_models import UserCreate, UserPublic, UserRegister
 from app.services.password_services import verify_password_reset_token
 from app.services.user_services import create_user, get_user_by_email
 
@@ -43,14 +42,16 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
 @router.post("/login/access-token", response_model=Token)
 def login_access_token(
     login_data: UserRegister,
-    db: Session = Depends(get_db),
+    # db: Session = Depends(get_db),
+    session: SessionDep,
 ) -> Token:
     """
     Token login accepting JSON input.
     Authenticate the user and return an access token for future requests.
     """
     # Fetch the user from the database
-    user = db.exec(select(User).where(User.email == login_data.email)).first()
+    # user = db.exec(select(User).where(User.email == login_data.email)).first()
+    user = get_user_by_email(session=session, email=login_data.email)
 
     # Verify the user's credentials
     if not user or not verify_password(login_data.password, user.hashed_password):
