@@ -19,20 +19,19 @@ def random_email() -> str:
     return f"{random_lower_string()}@{random_lower_string()}.com"
 
 
-def create_random_user(db: Session) -> User:
+def create_random_user(db: Session) -> tuple[User, str]:
     """Create a random user."""
     email = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=email, password=password)
     user = create_user(session=db, user_create=user_in)
-    user.password = password  # Store plaintext for test login
-    return user
+    return user, password
 
 
 def create_random_item(db: Session, owner: User | None = None) -> Item:
     """Create a random item."""
     if owner is None:
-        owner = create_random_user(db)
+        owner, _ = create_random_user(db)
     title = random_lower_string()
     description = random_lower_string()
     item_in = ItemCreate(title=title, description=description)

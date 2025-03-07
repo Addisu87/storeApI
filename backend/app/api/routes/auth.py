@@ -26,15 +26,15 @@ router = APIRouter(prefix="", tags=["auth"])
 
 @router.post("/register", response_model=UserPublic)
 def register_user(session: SessionDep, user_in: UserRegister) -> Any:
-    """Create a new user without the need to be logged in."""
-    if get_user_by_email(session=session, email=user_in.email):
+    existing_user = get_user_by_email(session=session, email=user_in.email)
+    if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A user with that email already exists!",
         )
-
     user_create = UserCreate.model_validate(user_in)
     user = create_user(session=session, user_create=user_create)
+    session.commit()
     logger.debug(f"New user registered: {user.email}")
     return user
 

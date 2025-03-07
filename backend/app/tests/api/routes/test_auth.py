@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import patch
 
 from app.core.config import settings
+from app.core.security import verify_password
 from app.models.user_models import User
 from app.services.user_services import get_user_by_email
 from fastapi.testclient import TestClient
@@ -18,8 +19,11 @@ def test_register_user_success(client: TestClient, db: Session):
     assert response.status_code == 200
     data = response.json()
     assert data["email"] == email
+    # Commit the session to persist the user
+    db.commit()
     user = get_user_by_email(db, email)
     assert user is not None, "User not found in database after registration"
+    assert verify_password("TestPass123!", user.hashed_password)
 
 
 def test_register_user_duplicate_email(client: TestClient, normal_user: User):
@@ -53,9 +57,12 @@ def test_register_user_missing_fields(client: TestClient):
 def test_login_success(client: TestClient, normal_user: User):
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        json={"email": "user@example.com", "Fpassword": "usersecret"},
+        json={"email": "user@example.com", "password": "usersecret"},
     )
     assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
 
 
 def test_login_wrong_password(client: TestClient, normal_user: User):
@@ -79,13 +86,13 @@ def test_login_nonexistent_user(client: TestClient):
 def test_login_inactive_user(
     client: TestClient, db: Session, create_random_user_fixture
 ):
-    user = create_random_user_fixture()
+    user, password = create_random_user_fixture()
     user.is_active = False
     db.add(user)
     db.commit()
     response = client.post(
         f"{settings.API_V1_STR}/login/access-token",
-        json={"email": user.email, "password": user.password},  # Use plaintext password
+        json={"email": user.email, "password": password},
     )
     assert response.status_code == 401
     assert response.json()["detail"] == "Inactive user"
@@ -163,7 +170,7 @@ def test_reset_password_nonexistent_user(client: TestClient):
 def test_reset_password_inactive_user(
     client: TestClient, db: Session, create_random_user_fixture
 ):
-    user = create_random_user_fixture()
+    user, password = create_random_user_fixture()
     user.is_active = False
     db.add(user)
     db.commit()

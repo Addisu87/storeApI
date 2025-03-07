@@ -11,6 +11,7 @@ from app.core.config import get_settings, settings
 from app.core.security import get_password_hash
 from app.main import app
 from app.models.user_models import User
+from app.services.user_services import get_user_by_email
 from app.tests.helpers import create_random_item, create_random_user
 
 ALEMBIC_INI_PATH = "alembic.ini"
@@ -22,19 +23,9 @@ def engine_fixture() -> Generator[Engine, None, None]:
     test_engine = create_engine(test_settings.get_db_uri_string(), echo=True)
     alembic_cfg = Config(ALEMBIC_INI_PATH)
     alembic_cfg.set_main_option("sqlalchemy.url", test_settings.get_db_uri_string())
-    try:
-        command.upgrade(alembic_cfg, "head")
-        print("Alembic migrations applied successfully")
-    except Exception as e:
-        print(f"Failed to apply Alembic migrations: {e}")
-        raise
-
-    # Create persistent users only if they don’t exist
+    command.upgrade(alembic_cfg, "head")
     with Session(test_engine) as session:
-        # Check for existing superuser
-        superuser = session.exec(
-            select(User).where(User.email == "superuser@example.com")
-        ).first()
+        superuser = get_user_by_email(session, "superuser@example.com")
         if not superuser:
             superuser = User(
                 email="superuser@example.com",
@@ -43,18 +34,7 @@ def engine_fixture() -> Generator[Engine, None, None]:
                 is_active=True,
             )
             session.add(superuser)
-            session.commit()
-            session.refresh(superuser)
-            print(
-                f"Persistent superuser created: {superuser.email}, ID: {superuser.id}"
-            )
-        else:
-            print(f"Superuser already exists: {superuser.email}, ID: {superuser.id}")
-
-        # Check for existing normal user
-        normal_user = session.exec(
-            select(User).where(User.email == "user@example.com")
-        ).first()
+        normal_user = get_user_by_email(session, "user@example.com")
         if not normal_user:
             normal_user = User(
                 email="user@example.com",
@@ -63,16 +43,8 @@ def engine_fixture() -> Generator[Engine, None, None]:
                 is_active=True,
             )
             session.add(normal_user)
-            session.commit()
-            session.refresh(normal_user)
-            print(
-                f"Persistent normal user created: {normal_user.email}, ID: {normal_user.id}"
-            )
-        else:
-            print(
-                f"Normal user already exists: {normal_user.email}, ID: {normal_user.id}"
-            )
-
+        session.commit()
+        print(f"Users in DB: {session.exec(select(User)).all()}")
     yield test_engine
 
 
@@ -119,13 +91,11 @@ def superuser(engine: Engine) -> User:
 @pytest.fixture(scope="module")
 def normal_user(engine: Engine) -> User:
     with Session(engine) as session:
-        user = session.exec(
-            select(User).where(User.email == "user@example.com")
-        ).first()
+        user = get_user_by_email(session, "user@example.com")
         if not user:
             user = User(
                 email="user@example.com",
-                hashed_password=get_password_hash("usersecret"),  # Hash the password
+                hashed_password=get_password_hash("usersecret"),
                 is_superuser=False,
                 is_active=True,
             )
@@ -151,7 +121,7 @@ def normal_user_token_headers(client: TestClient, normal_user: User) -> dict[str
     print(f"Normal user login response: {r.status_code}, {r.text}")
     assert r.status_code == 200, f"Normal user login failed: {r.text}"
     token = r.json()["access_token"]
-    return {"Authorization": f"Bearer {token}", "id": str(normal_user.id)}
+    return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture(scope="function")
