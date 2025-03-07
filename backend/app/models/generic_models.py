@@ -1,3 +1,4 @@
+# generic_models.py
 from sqlmodel import SQLModel
 
 
