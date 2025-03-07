@@ -5,13 +5,13 @@ from alembic import context
 
 # Import your settings
 from app.core.config import settings
+
+# Import all models via the app.models module to register their metadata
+from app.models import Item, User  # Explicit imports from __init__.py
 from sqlalchemy import engine_from_config, pool
 
 # Import SQLModel base
 from sqlmodel import SQLModel
-
-# Explicitly import all models to register their metadata
-# No need to import non-table models like UserCreate, UserPublic, etc.
 
 # Alembic Config object
 config = context.config
@@ -22,6 +22,10 @@ if config.config_file_name is not None:
 
 # Set the target metadata
 target_metadata = SQLModel.metadata
+
+# Ensure models are "used" to prevent Ruff from removing imports
+# This is a minimal no-op to satisfy linters
+model_registry = [User, Item]  # Reference the imports
 
 # Dynamically set the SQLAlchemy URL from settings
 config.set_main_option("sqlalchemy.url", settings.get_db_uri_string())

@@ -3,8 +3,8 @@ uvicorn
 pydantic
 python-multipart
 PyJWT
-passlib[bcrypt]
-bcrypt
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.1.0
 sqlmodel
 alembic
 pydantic-settings
