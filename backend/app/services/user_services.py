@@ -35,8 +35,6 @@ def create_user(session: Session, user_create: UserCreate) -> User:
     db_user = User(
         email=user_create.email,
         hashed_password=get_password_hash(user_create.password),
-        # is_active=user_create.is_active,
-        # is_superuser=user_create.is_superuser,
         is_active=True,
         is_superuser=False,
         full_name=user_create.full_name,

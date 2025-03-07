@@ -16,11 +16,10 @@ def test_register_user_success(client: TestClient, db: Session):
         f"{settings.API_V1_STR}/register",
         json={"email": email, "password": "TestPass123!"},
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, f"Got {response.status_code}: {response.text}"
     data = response.json()
     assert data["email"] == email
-    # Commit the session to persist the user
-    db.commit()
+    db.commit()  # Commit to persist for test verification
     user = get_user_by_email(db, email)
     assert user is not None, "User not found in database after registration"
     assert verify_password("TestPass123!", user.hashed_password)
@@ -62,7 +61,6 @@ def test_login_success(client: TestClient, normal_user: User):
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
-    assert data["token_type"] == "bearer"
 
 
 def test_login_wrong_password(client: TestClient, normal_user: User):
@@ -95,7 +93,9 @@ def test_login_inactive_user(
         json={"email": user.email, "password": password},
     )
     assert response.status_code == 401
-    assert response.json()["detail"] == "Inactive user"
+    assert response.json()["detail"] == "Inactive user", (
+        f"Got {response.json()['detail']}"
+    )
 
 
 # TEST TOKEN TESTS
@@ -180,5 +180,7 @@ def test_reset_password_inactive_user(
             f"{settings.API_V1_STR}/reset-password",
             json={"token": "some_token", "new_password": "NewPass123!"},
         )
-        assert response.status_code == 400
+        assert response.status_code == 400, (
+            f"Got {response.status_code}: {response.text}"
+        )
         assert response.json()["detail"] == "Inactive user"

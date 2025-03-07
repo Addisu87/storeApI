@@ -40,41 +40,22 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
 
 
 @router.post("/login/access-token", response_model=Token)
-def login_access_token(
-    login_data: UserRegister,
-    # db: Session = Depends(get_db),
-    session: SessionDep,
-) -> Token:
-    """
-    Token login accepting JSON input.
-    Authenticate the user and return an access token for future requests.
-    """
-    # Fetch the user from the database
-    # user = db.exec(select(User).where(User.email == login_data.email)).first()
+def login_access_token(login_data: UserRegister, session: SessionDep) -> Token:
     user = get_user_by_email(session=session, email=login_data.email)
-
-    # Verify the user's credentials
     if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
         )
-
-    # Check if the user is active
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Inactive user",
         )
-
-    # Generate an access token
     access_token_expires = timedelta(minutes=access_token_expire_minutes())
     access_token = create_access_token(
-        subject=str(user.id),  # Ensure subject is a string
-        expires_delta=access_token_expires,
+        subject=str(user.id), expires_delta=access_token_expires
     )
-
-    # Return the access token
     return Token(access_token=access_token, token_type="bearer")
 
 
@@ -93,28 +74,18 @@ def recover_password(session: SessionDep, email: str) -> Any:
 
 @router.post("/reset-password")
 def reset_password(session: SessionDep, body: NewPassword) -> Message:
-    """Reset password using a valid token."""
     email = verify_password_reset_token(token=body.token)
     if not email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid token",
-        )
-
+        raise HTTPException(status_code=400, detail="Invalid token")
     user = get_user_by_email(session=session, email=email)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=404,
             detail="A user with this email does not exist in the system!",
         )
-
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user",
-        )
-
-    user.hashed_password = get_password_hash(password=body.new_password)
+        raise HTTPException(status_code=400, detail="Inactive user")
+    user.hashed_password = get_password_hash(body.new_password)
     session.add(user)
     session.commit()
     return Message(message="Password updated successfully.")

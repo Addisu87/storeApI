@@ -24,16 +24,23 @@ def parse_cors(value: Any) -> list[str] | str:
 
 class BaseConfig(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-    ENV_STATE: Literal["dev", "staging", "production"] = "dev"
+    ENV_STATE: Literal["dev", "test", "prod"] = "dev"
 
 
 class Settings(BaseConfig):
+    # Databses
+    DATABASE_URL: str | None = None
+
+    # Security and API settings
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
     ALGORITHM: str = "HS256"
 
+    # Admin credentials
     ADMIN_EMAIL: EmailStr
     ADMIN_PASSWORD: str
+
+    # CORS and frontend
     FRONTEND_HOST: str = "http://localhost:5173"
     BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl], BeforeValidator(parse_cors)] = []
 
@@ -44,7 +51,9 @@ class Settings(BaseConfig):
             self.FRONTEND_HOST
         ]
 
+    # Project metadata
     PROJECT_NAME: str = "Full Stack FastAPI Project"
+
     SENTRY_DSN: HttpUrl | None = None
     LOGTAIL_API_KEY: str | None = None
     POSTGRES_SERVER: str = "localhost"
@@ -75,7 +84,7 @@ class Settings(BaseConfig):
     MAIL_FROM: EmailStr
     MAIL_FROM_NAME: str | None = None  # Optional
     MAIL_PORT: int = 587
-    MAIL_SERVER: str
+    MAIL_SERVER: str = "smtp.example.com"
     MAIL_STARTTLS: bool = True
     MAIL_SSL_TLS: bool = False
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48

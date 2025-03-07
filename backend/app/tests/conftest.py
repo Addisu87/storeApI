@@ -102,6 +102,7 @@ def normal_user(engine: Engine) -> User:
             session.add(user)
             session.commit()
             session.refresh(user)
+            print(f"Created normal_user: {user.email}, ID: {user.id}")
         return user
 
 
@@ -120,8 +121,7 @@ def normal_user_token_headers(client: TestClient, normal_user: User) -> dict[str
     r = client.post(f"{settings.API_V1_STR}/login/access-token", json=data)
     print(f"Normal user login response: {r.status_code}, {r.text}")
     assert r.status_code == 200, f"Normal user login failed: {r.text}"
-    token = r.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
 @pytest.fixture(scope="function")
