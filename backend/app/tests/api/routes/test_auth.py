@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
-from app.models.schemas import User
+from app.models.user_models import User
 from app.services.user_services import get_user_by_email
 from fastapi.testclient import TestClient
 from sqlmodel import Session

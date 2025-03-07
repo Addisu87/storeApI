@@ -13,7 +13,7 @@ from app.core.security import (
     get_password_hash,
     verify_password,
 )
-from app.models.schemas import UserCreate
+from app.models.user_models import UserCreate
 from app.services.user_services import create_user
 from app.tests.helpers import random_email, random_lower_string
 

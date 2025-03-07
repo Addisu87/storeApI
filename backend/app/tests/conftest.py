@@ -10,7 +10,7 @@ from sqlmodel import Session, create_engine, select
 from app.core.config import get_settings, settings
 from app.core.security import get_password_hash
 from app.main import app
-from app.models.schemas import User
+from app.models.user_models import User
 from app.tests.helpers import create_random_item, create_random_user
 
 ALEMBIC_INI_PATH = "alembic.ini"

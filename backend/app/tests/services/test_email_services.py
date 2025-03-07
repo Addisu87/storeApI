@@ -6,7 +6,7 @@ from fastapi import BackgroundTasks
 from fastapi_mail import MessageSchema, MessageType
 
 from app.core.config import settings
-from app.models.schemas import EmailData
+from app.models.email_models import EmailData
 from app.services.email_services import (
     generate_test_email,
     get_mail_config,

@@ -2,7 +2,8 @@
 import uuid
 
 from app.core.config import settings
-from app.models.schemas import Item, User
+from app.models.item_models import Item
+from app.models.user_models import User
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 

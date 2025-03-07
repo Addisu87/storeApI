@@ -3,7 +3,8 @@ import string
 
 from sqlmodel import Session
 
-from app.models.schemas import Item, ItemCreate, User, UserCreate
+from app.models.item_models import Item, ItemCreate
+from app.models.user_models import User, UserCreate
 from app.services.item_services import create_item
 from app.services.user_services import create_user
 

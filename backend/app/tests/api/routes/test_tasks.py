@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from app.core.config import settings
-from app.models.schemas import EmailData
+from app.models.email_models import EmailData
 from fastapi.testclient import TestClient
 
 
