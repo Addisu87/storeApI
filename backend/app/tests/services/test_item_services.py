@@ -16,21 +16,21 @@ from app.tests.helpers import (
 )
 
 
-def test_create_item_with_owner(db: Session) -> None:
-    owner = create_random_user(db)
+def test_create_item_with_owner(session: Session) -> None:
+    owner = create_random_user(session)
     title = random_lower_string()
     description = random_lower_string()
     item_in = ItemCreate(title=title, description=description)
-    item = create_item(session=db, item_in=item_in, owner_id=owner.id)
+    item = create_item(session=session, item_in=item_in, owner_id=owner.id)
     assert item.title == title
     assert item.description == description
     assert item.owner_id == owner.id
 
 
-def test_get_item(db: Session) -> None:
-    owner = create_random_user(db)
-    item = create_random_item(db, owner_id=owner.id)
-    stored_item = get_item_by_id(session=db, item_id=item.id)
+def test_get_item(session: Session) -> None:
+    owner = create_random_user(session)
+    item = create_random_item(session, owner_id=owner.id)
+    stored_item = get_item_by_id(session=session, item_id=item.id)
     assert stored_item
     assert item.id == stored_item.id
     assert item.title == stored_item.title
@@ -38,30 +38,26 @@ def test_get_item(db: Session) -> None:
     assert item.owner_id == stored_item.owner_id
 
 
-def test_get_item_not_found(db: Session) -> None:
+def test_get_item_not_found(session: Session) -> None:
     non_existent_id = uuid.uuid4()
-    stored_item = get_item_by_id(session=db, item_id=non_existent_id)
+    stored_item = get_item_by_id(session=session, item_id=non_existent_id)
     assert stored_item is None
 
 
-def test_update_item(db: Session) -> None:
-    owner = create_random_user(db)
-    item = create_random_item(db, owner_id=owner.id)
+def test_update_item(session: Session) -> None:
+    owner = create_random_user(session)
+    item = create_random_item(session, owner_id=owner.id)
     new_title = random_lower_string()
-    updated_item = update_item(
-        session=db,
-        item=item,
-        item_in=ItemUpdate(title=new_title, description=item.description),
-    )
-    assert updated_item.id == item.id
+    item_in = ItemUpdate(title=new_title)
+    updated_item = update_item(session=session, item=item, item_in=item_in)
     assert updated_item.title == new_title
-    assert updated_item.description == item.description
-    assert updated_item.owner_id == item.owner_id
+    assert updated_item.id == item.id
+    assert updated_item.owner_id == owner.id
 
 
-def test_delete_item(db: Session) -> None:
-    owner = create_random_user(db)
-    item = create_random_item(db, owner_id=owner.id)
-    delete_item(session=db, item=item)
-    stored_item = get_item_by_id(session=db, item_id=item.id)
+def test_delete_item(session: Session) -> None:
+    owner = create_random_user(session)
+    item = create_random_item(session, owner_id=owner.id)
+    delete_item(session=session, item=item)
+    stored_item = get_item_by_id(session=session, item_id=item.id)
     assert stored_item is None

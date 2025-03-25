@@ -1,4 +1,3 @@
-
 import logging
 from pathlib import Path
 from typing import Any
@@ -18,8 +17,9 @@ logger = logging.getLogger(__name__)
 templates_dir = Path(__file__).parent.parent / "templates" / "email"
 env = Environment(
     loader=FileSystemLoader(str(templates_dir)),
-    autoescape=True  # Enable autoescaping for security
+    autoescape=True,  # Enable autoescaping for security
 )
+
 
 def get_mail_config() -> ConnectionConfig:
     """Return mail configuration for FastAPI-Mail."""
@@ -35,6 +35,7 @@ def get_mail_config() -> ConnectionConfig:
         MAIL_FROM_NAME=settings.MAIL_FROM_NAME,
     )
 
+
 def generate_reset_password_email(
     email_to: str,
     email: str,
@@ -44,7 +45,7 @@ def generate_reset_password_email(
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - Password recovery"
     link = f"{settings.FRONTEND_HOST}/reset-password?token={token}"
-    
+
     template = env.get_template("reset_password.mjml")  # Remove 'email/' prefix
     html_content = template.render(
         project_name=project_name,
@@ -53,11 +54,12 @@ def generate_reset_password_email(
         valid_hours=email_reset_token_expire_hours(),
         link=link,
     )
-    
+
     return EmailData(
         subject=subject,
         html_content=html_content,
     )
+
 
 async def send_email(
     email_to: EmailStr,
@@ -71,13 +73,20 @@ async def send_email(
         body=email_data.html_content,
         subtype=MessageType.html,
     )
-    
+
     fm = FastMail(get_mail_config())
     background_tasks.add_task(fm.send_message, message)
     logger.info(
         "Email sent successfully",
         extra={"email_to": email_to, "subject": email_data.subject},
     )
+
+
+def render_email_template(template_name: str, context: dict[str, Any]) -> str:
+    """Render an email template with the given context."""
+    template = env.get_template(template_name)
+    return template.render(**context)
+
 
 def generate_test_email(email_to: EmailStr) -> EmailData:
     project_name = settings.PROJECT_NAME
@@ -106,6 +115,7 @@ def generate_new_account_email(
     )
     return EmailData(html_content=html_content, subject=subject)
 
+
 async def send_email_background(
     email_to: EmailStr,
     email_data: EmailData,
@@ -118,7 +128,7 @@ async def send_email_background(
         body=email_data.html_content,
         subtype=MessageType.html,
     )
-    
+
     fm = FastMail(mail_config)
     await fm.send_message(message)
     logger.info(

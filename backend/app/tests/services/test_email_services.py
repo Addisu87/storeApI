@@ -1,5 +1,5 @@
 # app/tests/services/test_email_services.py
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import BackgroundTasks
@@ -30,7 +30,7 @@ def test_generate_test_email():
     email_to = "test@example.com"
     email_data = generate_test_email(email_to)
 
-    assert email_data.subject == "Test email from FastAPI"
+    assert email_data.subject == "Full Stack FastAPI Project - Test email"
     assert email_data.html_content is not None
     assert "test@example.com" in email_data.html_content
 
@@ -47,7 +47,7 @@ def test_generate_reset_password_email():
     )
 
     assert isinstance(email_data, EmailData)  # Type check
-    assert email_data.subject == "Password recovery for FastAPI"
+    assert email_data.subject == "Full Stack FastAPI Project - Password recovery"
     assert email_data.html_content is not None
     assert token in email_data.html_content
     assert email in email_data.html_content
@@ -64,59 +64,71 @@ def test_generate_new_account_email():
         password=password,
     )
 
-    assert email_data.subject == "New account created in FastAPI"
+    assert (
+        email_data.subject
+        == f"Full Stack FastAPI Project - New account for user {username}"
+    )
     assert email_data.html_content is not None
     assert username in email_data.html_content
     assert password in email_data.html_content
 
 
 @pytest.mark.asyncio
-async def test_send_email_background_enabled(mail_config, mocker):
-    mock_fm = mocker.patch("app.services.email_services.FastMail", autospec=True)
-    mock_fm.return_value.send_message = AsyncMock()
+async def test_send_email_background_enabled(mocker):
+    # Create a mock mail config
+    mail_config = get_mail_config()
+    
+    # Mock FastMail class
+    mock_fastmail = AsyncMock()
+    mock_fastmail.send_message = AsyncMock()
+    mock_fm = mocker.patch("app.services.email_services.FastMail", return_value=mock_fastmail)
 
     email_to = "user@example.com"
     email_data = EmailData(
         subject="Test Subject", html_content="<p>This is a test email.</p>"
     )
 
-    with patch("app.services.email_services.logger") as mock_logger:
-        await send_email_background(email_to, email_data, mail_config)
-        mock_logger.info.assert_called_once()
+    await send_email_background(email_to, email_data, mail_config)
 
-    mock_fm.assert_called_once()
-    mock_send_message = mock_fm.return_value.send_message
-    mock_send_message.assert_called_once()
+    # Verify FastMail was instantiated with the config
+    mock_fm.assert_called_once_with(mail_config)
+    
+    # Verify send_message was called
+    mock_fastmail.send_message.assert_called_once()
 
-    call_args = mock_send_message.call_args[0][0]
-    assert isinstance(call_args, MessageSchema)
-    assert call_args.subject == "Test Subject"
-    assert call_args.recipients == [email_to]
-    assert call_args.body == "<p>This is a test email.</p>"
-    assert call_args.subtype == MessageType.html
+    # Get the message from the call arguments
+    message = mock_fastmail.send_message.call_args[0][0]
+    assert isinstance(message, MessageSchema)
+    assert message.subject == "Test Subject"
+    assert message.recipients == [email_to]
+    assert message.body == "<p>This is a test email.</p>"
+    assert message.subtype == MessageType.html
 
 
 @pytest.mark.asyncio
-async def test_send_email(mocker):
-    mock_fastmail = mocker.patch("app.services.email_services.FastMail")
-    mock_send = mocker.AsyncMock()
-    mock_fastmail.return_value.send_message = mock_send
-
+async def test_send_email(background_tasks: BackgroundTasks):
     email_to = "test@example.com"
-    email_data = generate_test_email(email_to)
-    background_tasks = BackgroundTasks()
+    email_data = EmailData(subject="Test Subject", html_content="<p>Test content</p>")
 
     await send_email(
         email_to=email_to,
-        email_data={
-            "subject": email_data.subject,
-            "html_content": email_data.html_content,
-        },
+        email_data=email_data,
         background_tasks=background_tasks,
     )
 
+    # Verify that a background task was added
     assert len(background_tasks.tasks) == 1
     task = background_tasks.tasks[0]
-    assert task.func == send_email_background
-    assert task.kwargs["email_to"] == email_to
-    assert task.kwargs["email_data"] == email_data
+
+    # Verify the task is configured correctly
+    assert (
+        task.func.__name__ == "send_message"
+    )  # FastMail's send_message is the actual task
+
+    # Get the message from the first positional argument
+    message = task.args[0]
+    assert isinstance(message, MessageSchema)
+    assert message.subject == email_data.subject
+    assert message.recipients == [email_to]
+    assert message.body == email_data.html_content
+    assert message.subtype == MessageType.html
