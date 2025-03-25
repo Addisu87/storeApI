@@ -8,10 +8,10 @@ from sqlmodel import col, delete, func, select
 from app.core.config import settings
 from app.core.deps import CurrentUser, SessionDep, get_current_active_superuser
 from app.core.security import get_password_hash, verify_password
+from app.models.auth_models import UpdatePassword
 from app.models.generic_models import Message
 from app.models.item_models import Item
 from app.models.user_models import (
-    UpdatePassword,
     User,
     UserCreate,
     UserPublic,

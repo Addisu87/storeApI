@@ -87,7 +87,7 @@ class Settings(BaseConfig):
     MAIL_SERVER: str = "smtp.example.com"
     MAIL_STARTTLS: bool = True
     MAIL_SSL_TLS: bool = False
-    EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
+    MAIL_USE_CREDENTIALS: bool = True
     EMAILS_ENABLED: bool = True
 
 
@@ -101,18 +101,29 @@ class ProdConfig(Settings):
 
 class TestConfig(Settings):
     model_config = SettingsConfigDict(env_prefix="TEST_", extra="ignore")
+
+    # Database settings
     POSTGRES_USER: str = "storeapi"
     POSTGRES_PASSWORD: str = "storeapi87"
-    POSTGRES_DB: str = "testdb"  # Explicitly set to testdb
+    POSTGRES_DB: str = "testdb"
+    POSTGRES_SERVER: str = "localhost"
+    POSTGRES_PORT: int = 5432
     DB_FORCE_ROLL_BACK: bool = True
 
+    # Admin credentials for testing
     ADMIN_EMAIL: EmailStr = "admin@test.com"
     ADMIN_PASSWORD: str = "testadminpass"
-    MAIL_USERNAME: str = "testuser"
-    MAIL_PASSWORD: str = "testpass"
+
+    # Email settings for testing
+    MAIL_USERNAME: str = "test_user"
+    MAIL_PASSWORD: str = "test_pass"
     MAIL_FROM: EmailStr = "test@example.com"
-    MAIL_SERVER: str = "smtp.test.com"
-    EMAILS_ENABLED: bool = False
+    MAIL_SERVER: str = "localhost"
+    MAIL_PORT: int = 587
+    MAIL_STARTTLS: bool = False
+    MAIL_SSL_TLS: bool = False
+    MAIL_USE_CREDENTIALS: bool = False
+    EMAILS_ENABLED: bool = False  # Disable actual email sending in tests
 
 
 # Cache the settings

@@ -1,4 +1,3 @@
-# item_models.py
 import uuid
 
 from sqlmodel import Field, Relationship, SQLModel
@@ -6,7 +5,6 @@ from sqlmodel import Field, Relationship, SQLModel
 
 # Forward reference for User (to avoid circular imports)
 class User(SQLModel):
-    __tablename__ = "user"  # type: ignore
     id: uuid.UUID
 
 
@@ -28,13 +26,9 @@ class ItemUpdate(ItemBase):
 
 # Database model
 class Item(ItemBase, table=True):
-    """Use string-based forward reference"""
-
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     title: str = Field(max_length=255)
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE"
-    )
+    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
     owner: "User" = Relationship(back_populates="items")
 
 

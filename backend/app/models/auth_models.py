@@ -1,4 +1,3 @@
-# auth_models.py
 from sqlmodel import Field, SQLModel
 
 

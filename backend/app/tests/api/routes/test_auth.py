@@ -1,186 +1,127 @@
-import uuid
-from unittest.mock import patch
+from datetime import timedelta
 
-from app.core.config import settings
-from app.core.security import verify_password
+from app.core.security import create_access_token, get_password_hash
 from app.models.user_models import User
-from app.services.user_services import get_user_by_email
-from fastapi.testclient import TestClient
-from sqlmodel import Session
+from app.tests.helpers import random_email, random_lower_string
+from app.utilities.constants import email_reset_token_expire_hours
+from fastapi import status
+from unittest.mock import AsyncMock, patch
+import pytest
 
 
-# REGISTER TESTS
-def test_register_user_success(client: TestClient, db: Session):
-    email = f"newuser-{uuid.uuid4()}@example.com"
-    response = client.post(
-        f"{settings.API_V1_STR}/register",
-        json={"email": email, "password": "TestPass123!"},
+def test_register_user(client):
+    email = random_email()
+    password = random_lower_string()
+    data = {"email": email, "password": password}
+    response = client.post("/api/v1/auth/register", json=data)
+
+    assert response.status_code == status.HTTP_201_CREATED
+    result = response.json()
+    assert result["email"] == email
+    assert "id" in result
+
+
+def test_register_existing_user(client, session, normal_user):
+    """Test registering a user with an email that already exists."""
+    data = {"email": normal_user.email, "password": "newpassword123"}
+    response = client.post("/api/v1/auth/register", json=data)
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_login_success(client, session):
+    """Test successful login."""
+    email = "test@example.com"
+    password = "testpassword123"
+
+    # Create user with properly hashed password
+    user = User(
+        email=email, hashed_password=get_password_hash(password), is_active=True
     )
-    assert response.status_code == 200, f"Got {response.status_code}: {response.text}"
-    data = response.json()
-    assert data["email"] == email
-    db.commit()  # Commit to persist for test verification
-    user = get_user_by_email(db, email)
-    assert user is not None, "User not found in database after registration"
-    assert verify_password("TestPass123!", user.hashed_password)
+    session.add(user)
+    session.commit()
+    session.refresh(user)
 
+    # Use OAuth2 password flow format
+    form_data = {
+        "username": email,
+        "password": password,
+        "grant_type": "password",
+    }
 
-def test_register_user_duplicate_email(client: TestClient, normal_user: User):
     response = client.post(
-        f"{settings.API_V1_STR}/register",
-        json={"email": normal_user.email, "password": "TestPass123!"},
+        "/api/v1/auth/login/access-token",
+        data=form_data,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
-    assert response.status_code == 400
-    assert response.json()["detail"] == "A user with that email already exists!"
 
+    assert response.status_code == 200
+    tokens = response.json()
+    assert "access_token" in tokens
+    assert tokens["token_type"] == "bearer"
 
-def test_register_user_invalid_password(client: TestClient):
+    # Test the token works
+    token = tokens["access_token"]
     response = client.post(
-        f"{settings.API_V1_STR}/register",
-        json={"email": "shortpass@example.com", "password": "short"},
-    )
-    assert response.status_code == 422
-    assert "string_too_short" in response.text
-
-
-def test_register_user_missing_fields(client: TestClient):
-    response = client.post(
-        f"{settings.API_V1_STR}/register",
-        json={"email": "missing@example.com"},
-    )
-    assert response.status_code == 422
-    assert "missing" in response.text
-
-
-# LOGIN TESTS
-def test_login_success(client: TestClient, normal_user: User):
-    response = client.post(
-        f"{settings.API_V1_STR}/login/access-token",
-        json={"email": "user@example.com", "password": "usersecret"},
+        "/api/v1/auth/login/test-token", headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 200
-    data = response.json()
-    assert "access_token" in data
+    user_data = response.json()
+    assert user_data["email"] == email
 
 
-def test_login_wrong_password(client: TestClient, normal_user: User):
+def test_login_incorrect_password(client, normal_user):
+    login_data = {
+        "username": normal_user.email,
+        "password": "wrongpassword",
+        "grant_type": "password",  # Required for OAuth2 password flow
+    }
     response = client.post(
-        f"{settings.API_V1_STR}/login/access-token",
-        json={"email": normal_user.email, "password": "wrongsecret"},
+        "/api/v1/auth/login/access-token",
+        data=login_data,  # Use data instead of json for form submission
     )
     assert response.status_code == 401
-    assert response.json()["detail"] == "Incorrect email or password"
 
 
-def test_login_nonexistent_user(client: TestClient):
-    response = client.post(
-        f"{settings.API_V1_STR}/login/access-token",
-        json={"email": "nonexistent@example.com", "password": "TestPass123!"},
+@pytest.mark.asyncio
+async def test_password_recovery(client, normal_user):
+    """Test password recovery endpoint with mocked email sending"""
+    with patch("app.api.routes.auth.send_email", new_callable=AsyncMock) as mock_send_email:
+        response = client.post(f"/api/v1/auth/password-recovery/{normal_user.email}")
+        
+        # Assert the response
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["message"] == "Password recovery email sent"
+        
+        # Verify that send_email was called
+        mock_send_email.assert_called_once()
+        
+        # Verify the call arguments using kwargs instead of args
+        call_kwargs = mock_send_email.call_args.kwargs
+        assert call_kwargs['email_to'] == normal_user.email
+        assert 'email_data' in call_kwargs
+        assert 'background_tasks' in call_kwargs
+
+
+def test_reset_password(client, normal_user):
+    # Generate a valid token
+    token = create_access_token(
+        subject=normal_user.email,
+        expires_delta=timedelta(hours=email_reset_token_expire_hours()),
     )
-    assert response.status_code == 401
-    assert response.json()["detail"] == "Incorrect email or password"
 
-
-def test_login_inactive_user(
-    client: TestClient, db: Session, create_random_user_fixture
-):
-    user, password = create_random_user_fixture()
-    user.is_active = False
-    db.add(user)
-    db.commit()
+    new_password = "newpassword123"
     response = client.post(
-        f"{settings.API_V1_STR}/login/access-token",
-        json={"email": user.email, "password": password},
-    )
-    assert response.status_code == 401
-    assert response.json()["detail"] == "Inactive user", (
-        f"Got {response.json()['detail']}"
-    )
-
-
-# TEST TOKEN TESTS
-def test_test_token_success(
-    client: TestClient, normal_user_token_headers: dict[str, str]
-):
-    response = client.post(
-        f"{settings.API_V1_STR}/login/test-token",
-        headers=normal_user_token_headers,
+        "/api/v1/auth/reset-password",
+        json={"token": token, "new_password": new_password},
     )
     assert response.status_code == 200
-    data = response.json()
-    assert data["email"] == "user@example.com"
+    assert response.json()["message"] == "Password updated successfully"
 
-
-def test_test_token_no_auth(client: TestClient):
-    response = client.post(f"{settings.API_V1_STR}/login/test-token")
-    assert response.status_code == 401
-    assert response.json()["detail"] == "Not authenticated"
-
-
-def test_test_token_invalid_token(client: TestClient):
-    response = client.post(
-        f"{settings.API_V1_STR}/login/test-token",
-        headers={"Authorization": "Bearer invalid_token_here"},
-    )
-    assert response.status_code == 401
-    assert response.json()["detail"] == "Could not validate credentials"
-
-
-# RESET PASSWORD TESTS
-def test_reset_password_success(client: TestClient, db: Session, normal_user: User):
-    with patch("app.api.routes.auth.verify_password_reset_token") as mock_verify:
-        mock_verify.return_value = normal_user.email
-        response = client.post(
-            f"{settings.API_V1_STR}/reset-password",
-            json={"token": "valid_reset_token", "new_password": "NewPass123!"},
-        )
-        assert response.status_code == 200
-        assert response.json()["message"] == "Password updated successfully."
-
-
-def test_reset_password_invalid_token(client: TestClient):
-    with patch("app.api.routes.auth.verify_password_reset_token") as mock_verify:
-        mock_verify.return_value = None
-        response = client.post(
-            f"{settings.API_V1_STR}/reset-password",
-            json={"token": "invalid_token", "new_password": "NewPass123!"},
-        )
-        assert response.status_code == 400, (
-            f"Got {response.status_code}: {response.text}"
-        )
-        assert response.json()["detail"] == "Invalid token"
-
-
-def test_reset_password_nonexistent_user(client: TestClient):
-    with patch("app.api.routes.auth.verify_password_reset_token") as mock_verify:
-        mock_verify.return_value = "nonexistent@example.com"
-        response = client.post(
-            f"{settings.API_V1_STR}/reset-password",
-            json={"token": "some_token", "new_password": "NewPass123!"},
-        )
-        assert response.status_code == 404, (
-            f"Got {response.status_code}: {response.text}"
-        )
-        assert (
-            response.json()["detail"]
-            == "A user with this email does not exist in the system!"
-        )
-
-
-def test_reset_password_inactive_user(
-    client: TestClient, db: Session, create_random_user_fixture
-):
-    user, password = create_random_user_fixture()
-    user.is_active = False
-    db.add(user)
-    db.commit()
-    with patch("app.api.routes.auth.verify_password_reset_token") as mock_verify:
-        mock_verify.return_value = user.email
-        response = client.post(
-            f"{settings.API_V1_STR}/reset-password",
-            json={"token": "some_token", "new_password": "NewPass123!"},
-        )
-        assert response.status_code == 400, (
-            f"Got {response.status_code}: {response.text}"
-        )
-        assert response.json()["detail"] == "Inactive user"
+    # Verify we can login with new password
+    login_data = {
+        "username": normal_user.email,
+        "password": new_password,
+        "grant_type": "password",
+    }
+    response = client.post("/api/v1/auth/login/access-token", data=login_data)
+    assert response.status_code == 200

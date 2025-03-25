@@ -1,47 +1,58 @@
 import random
 import string
+import uuid
+from typing import Dict
 
+from pydantic import EmailStr
 from sqlmodel import Session
 
-from app.models.item_models import Item, ItemCreate
-from app.models.user_models import User, UserCreate
-from app.services.item_services import create_item
+from app.core.security import get_password_hash
+from app.models.item_models import Item
+from app.models.user_models import User
 from app.services.user_services import create_user
+from app.models.user_models import UserCreate
 
 
-def random_lower_string() -> str:
-    """Generate a random string of lowercase letters."""
-    return "".join(random.choices(string.ascii_lowercase, k=32))
+def random_lower_string(length: int = 32) -> str:
+    return "".join(random.choices(string.ascii_lowercase, k=length))
 
 
 def random_email() -> str:
-    """Generate a random email address."""
     return f"{random_lower_string()}@{random_lower_string()}.com"
 
 
-def create_random_user(db: Session) -> tuple[User, str]:
-    """Create a random user."""
+def random_uuid() -> uuid.UUID:
+    return uuid.uuid4()
+
+
+def create_random_user(session: Session) -> User:
     email = random_email()
     password = random_lower_string()
-    user_in = UserCreate(email=email, password=password)
-    user = create_user(session=db, user_create=user_in)
-    return user, password
+    user_in = UserCreate(
+        email=email,
+        password=password,
+        full_name=random_lower_string(),
+    )
+    user = create_user(session=session, user_create=user_in)
+    return user
 
 
-def create_random_item(db: Session, owner: User | None = None) -> Item:
-    """Create a random item."""
-    if owner is None:
-        owner, _ = create_random_user(db)
-    title = random_lower_string()
-    description = random_lower_string()
-    item_in = ItemCreate(title=title, description=description)
-    return create_item(session=db, item_in=item_in, owner_id=owner.id)
+def create_random_item(session: Session, owner_id: uuid.UUID) -> Item:
+    item = Item(
+        title=random_lower_string(),
+        description=random_lower_string(),
+        owner_id=owner_id,
+    )
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+    return item
 
 
-def override_current_user(user: User):
-    """Override the current user dependency."""
-
-    def _override():
-        return user
-
-    return _override
+def user_authentication_headers(
+    *, client, email: str, password: str
+) -> Dict[str, str]:
+    data = {"username": email, "password": password}
+    response = client.post("/api/v1/auth/login", data=data)
+    auth_token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {auth_token}"}

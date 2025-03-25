@@ -1,4 +1,3 @@
-# app/tests/core/test_security.py
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -8,7 +7,6 @@ from sqlmodel import Session
 
 from app.core.config import settings
 from app.core.security import (
-    access_token_expire_minutes,
     create_access_token,
     get_password_hash,
     verify_password,
@@ -16,9 +14,10 @@ from app.core.security import (
 from app.models.user_models import UserCreate
 from app.services.user_services import create_user
 from app.tests.helpers import random_email, random_lower_string
+from app.utilities.constants import access_token_expire_minutes
 
 
-def test_create_access_token(db: Session) -> None:
+def test_create_access_token(db) -> None:
     email = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=email, password=password)
@@ -35,15 +34,13 @@ def test_create_access_token(db: Session) -> None:
 def test_verify_password() -> None:
     password = random_lower_string()
     hashed_password = get_password_hash(password)
-
-    assert verify_password(password, hashed_password) is True
-    assert verify_password("wrongpassword", hashed_password) is False
+    assert verify_password(password, hashed_password)
+    assert not verify_password("wrongpassword", hashed_password)
 
 
 def test_get_password_hash() -> None:
     password = random_lower_string()
     hashed_password = get_password_hash(password)
-
     assert hashed_password != password
     assert verify_password(password, hashed_password) is True
 

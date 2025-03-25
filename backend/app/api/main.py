@@ -1,12 +1,11 @@
-# Application entry point
 from fastapi import APIRouter
 
 from app.api.routes import auth, items, tasks, users
-from app.core.config import settings
 
-api_router = APIRouter(prefix=settings.API_V1_STR)
+api_router = APIRouter()
 
-api_router.include_router(items.router)
-api_router.include_router(users.router)
-api_router.include_router(auth.router)
-api_router.include_router(tasks.router)
+# Include all route modules
+api_router.include_router(auth.router, tags=["auth"])
+api_router.include_router(users.router, prefix="/users", tags=["users"])
+api_router.include_router(items.router, prefix="/items", tags=["items"])
+api_router.include_router(tasks.router, prefix="/tasks", tags=["tasks"])

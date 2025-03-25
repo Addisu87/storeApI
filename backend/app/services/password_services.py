@@ -5,6 +5,7 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 
 from app.core.config import settings
+from app.utilities.constants import email_reset_token_expire_hours
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 def generate_password_reset_token(email: str) -> str:
     logger.debug("Creating password reset token", extra={"email": email})
     expire = datetime.now(timezone.utc) + timedelta(
-        hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS
+        hours=email_reset_token_expire_hours()
     )
     jwt_data = {"sub": email, "exp": expire}
     encoded_jwt = jwt.encode(

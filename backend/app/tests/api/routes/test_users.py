@@ -1,20 +1,25 @@
 import uuid
-from unittest.mock import patch
 
 import pytest
+from app.core.config import get_settings
 from app.core.deps import get_current_active_superuser
 from app.core.security import get_password_hash
 from app.main import app
 from app.models.user_models import User
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
+from fastapi import status
+
+from app.tests.helpers import random_email, random_lower_string
+from app.models.user_models import UserCreate, UserUpdate
 
 
 # Test database setup
 @pytest.fixture(name="engine")
 def engine_fixture():
+    test_settings = get_settings("test")
     engine = create_engine(
-        "postgresql+psycopg2://testuser:testpass@localhost/testdb",
+        test_settings.get_db_uri_string(),
         echo=True,
     )
     SQLModel.metadata.create_all(engine)
@@ -76,25 +81,23 @@ def override_current_user(user):
 
 
 # Tests
-def test_create_user_success(client, superuser):
-    app.dependency_overrides[get_current_active_superuser] = override_current_user(
-        superuser
+def test_create_user_success(
+    client: TestClient, superuser_token_headers: dict[str, str]
+):
+    email = f"test-{uuid.uuid4()}@example.com"
+    password = "TestPass123!"
+    response = client.post(
+        "/api/v1/users/",
+        headers=superuser_token_headers,
+        json={"email": email, "password": password, "full_name": "Test User"},
     )
-    with patch("app.services.email_services.send_email") as mock_send_email:
-        response = client.post(
-            "/users/",
-            json={
-                "email": "newuser@example.com",
-                "password": "newpass123",
-                "full_name": "New User",
-            },
-        )
-        assert response.status_code == 201
-        data = response.json()
-        assert data["email"] == "newuser@example.com"
-        assert data["full_name"] == "New User"
-        assert "id" in data
-        assert mock_send_email.called
+    assert response.status_code == 201
+    data = response.json()
+    assert data["email"] == email
+    assert "id" in data
+    assert data["is_active"] is True
+    assert data["is_superuser"] is False
+    assert data["full_name"] == "Test User"
 
 
 def test_create_user_duplicate_email(client, superuser, normal_user):
@@ -126,14 +129,15 @@ def test_read_user_me(client, normal_user):
     assert data["email"] == "user@example.com"
 
 
-def test_update_user_me_success(client, normal_user):
-    app.dependency_overrides[get_current_active_superuser] = override_current_user(
-        normal_user
+def test_update_user_me(client: TestClient, normal_user_token_headers: dict[str, str]):
+    response = client.patch(
+        "/api/v1/users/me",
+        headers=normal_user_token_headers,
+        json={"full_name": "Updated Name"},
     )
-    response = client.patch("/users/me", json={"full_name": "Updated User"})
     assert response.status_code == 200
     data = response.json()
-    assert data["full_name"] == "Updated User"
+    assert data["full_name"] == "Updated Name"
 
 
 def test_update_user_me_email_conflict(client, normal_user, superuser):
@@ -145,13 +149,13 @@ def test_update_user_me_email_conflict(client, normal_user, superuser):
     assert response.json()["detail"] == "User with this email already exists"
 
 
-def test_update_password_me_success(client, normal_user):
-    app.dependency_overrides[get_current_active_superuser] = override_current_user(
-        normal_user
-    )
+def test_update_user_me_password(
+    client: TestClient, normal_user_token_headers: dict[str, str]
+):
     response = client.patch(
-        "/users/me/password",
-        json={"current_password": "usersecret", "new_password": "newsecret123"},
+        "/api/v1/users/me/password",
+        headers=normal_user_token_headers,
+        json={"current_password": "usersecret", "new_password": "newpassword123"},
     )
     assert response.status_code == 200
     assert response.json()["message"] == "Password updated successfully"
@@ -278,3 +282,77 @@ def test_delete_user_self_forbidden(client, superuser):
     response = client.delete(f"/users/{superuser.id}")
     assert response.status_code == 403
     assert response.json()["detail"] == "Superusers cannot delete themselves"
+
+
+def test_create_user(client, superuser_token_headers):
+    email = random_email()
+    password = random_lower_string()
+    data = {"email": email, "password": password}
+    
+    response = client.post(
+        "/api/v1/users/",
+        headers=superuser_token_headers,
+        json=data
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    created_user = response.json()
+    assert created_user["email"] == email
+    assert "id" in created_user
+
+
+def test_read_users(client, superuser_token_headers):
+    response = client.get(
+        "/api/v1/users/",
+        headers=superuser_token_headers
+    )
+    assert response.status_code == status.HTTP_200_OK
+    users = response.json()
+    assert "data" in users
+    assert "count" in users
+    assert isinstance(users["data"], list)
+    assert users["count"] >= 1
+
+
+def test_read_user_me(client, normal_user, normal_user_token_headers):
+    response = client.get(
+        "/api/v1/users/me",
+        headers=normal_user_token_headers
+    )
+    assert response.status_code == status.HTTP_200_OK
+    user_data = response.json()
+    assert user_data["email"] == normal_user.email
+    assert user_data["id"] == str(normal_user.id)
+
+
+def test_update_user_me(client, normal_user, normal_user_token_headers):
+    new_name = random_lower_string()
+    response = client.patch(
+        "/api/v1/users/me",
+        headers=normal_user_token_headers,
+        json={"full_name": new_name}
+    )
+    assert response.status_code == status.HTTP_200_OK
+    updated_user = response.json()
+    assert updated_user["full_name"] == new_name
+
+
+@pytest.mark.parametrize(
+    "user_data,expected_status",
+    [
+        ({"email": "invalid"}, status.HTTP_422_UNPROCESSABLE_ENTITY),
+        ({"password": "short"}, status.HTTP_422_UNPROCESSABLE_ENTITY),
+        ({}, status.HTTP_422_UNPROCESSABLE_ENTITY),
+    ],
+)
+def test_create_user_validation(
+    client, 
+    superuser_token_headers, 
+    user_data, 
+    expected_status
+):
+    response = client.post(
+        "/api/v1/users/",
+        headers=superuser_token_headers,
+        json=user_data
+    )
+    assert response.status_code == expected_status
