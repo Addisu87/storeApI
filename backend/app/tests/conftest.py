@@ -4,15 +4,10 @@ from sqlmodel import Session, SQLModel, create_engine
 from datetime import timedelta
 
 from app.core.config import get_settings
-from app.core.security import (
-    create_access_token,
-    verify_password,
-    get_password_hash,
-)
+from app.core.security import create_access_token, get_password_hash
 from app.main import app
 from app.models.user_models import User
 from app.core.deps import get_db
-from app.tests.helpers import create_random_item
 
 
 # Test database setup
@@ -30,10 +25,8 @@ def engine_fixture():
 
 @pytest.fixture(name="session")
 def session_fixture(engine):
-    """Create a fresh database session for a test."""
     with Session(engine) as session:
         yield session
-        session.rollback()
 
 
 @pytest.fixture(name="client")
@@ -43,18 +36,19 @@ def client_fixture(engine):
             yield session
 
     app.dependency_overrides[get_db] = get_session_override
-    with TestClient(app) as client:
-        yield client
+    client = TestClient(app)
+    yield client
     app.dependency_overrides.clear()
 
 
 @pytest.fixture(name="superuser")
-def superuser_fixture(session: Session):
+def superuser_fixture(session):
     user = User(
-        email="superuser@example.com",
+        email="admin@test.com",
         hashed_password=get_password_hash("supersecret"),
         is_superuser=True,
         is_active=True,
+        full_name="Super User"
     )
     session.add(user)
     session.commit()
@@ -63,12 +57,13 @@ def superuser_fixture(session: Session):
 
 
 @pytest.fixture(name="normal_user")
-def normal_user_fixture(session: Session):
+def normal_user_fixture(session):
     user = User(
-        email="user@example.com",
+        email="user@test.com",
         hashed_password=get_password_hash("usersecret"),
         is_superuser=False,
         is_active=True,
+        full_name="Normal User"
     )
     session.add(user)
     session.commit()
@@ -77,19 +72,21 @@ def normal_user_fixture(session: Session):
 
 
 @pytest.fixture(name="superuser_token_headers")
-def superuser_token_headers_fixture(client: TestClient, superuser: User):
-    login_data = {"username": superuser.email, "password": "supersecret"}
-    response = client.post("/api/v1/auth/login", data=login_data)
-    tokens = response.json()
-    return {"Authorization": f"Bearer {tokens['access_token']}"}
+def superuser_token_headers_fixture(superuser: User) -> dict[str, str]:
+    access_token = create_access_token(
+        subject=superuser.email,  # Use email instead of ID
+        expires_delta=timedelta(minutes=30),
+    )
+    return {"Authorization": f"Bearer {access_token}"}
 
 
 @pytest.fixture(name="normal_user_token_headers")
-def normal_user_token_headers_fixture(client: TestClient, normal_user: User):
-    login_data = {"username": normal_user.email, "password": "usersecret"}
-    response = client.post("/api/v1/auth/login", data=login_data)
-    tokens = response.json()
-    return {"Authorization": f"Bearer {tokens['access_token']}"}
+def normal_user_token_headers_fixture(normal_user: User) -> dict[str, str]:
+    access_token = create_access_token(
+        subject=normal_user.email,  # Use email instead of ID
+        expires_delta=timedelta(minutes=30),
+    )
+    return {"Authorization": f"Bearer {access_token}"}
 
 
 def test_password_hashing():

@@ -33,19 +33,32 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
+    # Use getattr with a default value to handle missing VERSION
+    version=getattr(settings, "VERSION", "0.1.0"),
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan,
 )
 
-# Set all CORS enabled origins
-if settings.BACKEND_CORS_ORIGINS:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.all_cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.all_cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Include API router
+# Include the main API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Root endpoint
+@app.get("/")
+async def root():
+    return {"msg": "Hello Bigger Applications!"}
+
+# WebSocket endpoint
+@app.websocket("/ws")
+async def websocket_endpoint(websocket):
+    await websocket.accept()
+    await websocket.send_json({"msg": "Hello WebSocket"})
+    await websocket.close()
