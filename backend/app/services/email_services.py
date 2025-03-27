@@ -13,7 +13,7 @@ from app.utilities.constants import email_reset_token_expire_hours
 
 logger = logging.getLogger(__name__)
 
-# Update template directory path
+# Fix template directory path to point to the correct location
 templates_dir = Path(__file__).parent.parent / "templates" / "email"
 env = Environment(
     loader=FileSystemLoader(str(templates_dir)),
@@ -46,7 +46,7 @@ def generate_reset_password_email(
     subject = f"{project_name} - Password recovery"
     link = f"{settings.FRONTEND_HOST}/reset-password?token={token}"
 
-    template = env.get_template("reset_password.mjml")  # Remove 'email/' prefix
+    template = env.get_template("reset_password.mjml")
     html_content = template.render(
         project_name=project_name,
         username=email,
@@ -84,8 +84,13 @@ async def send_email(
 
 def render_email_template(template_name: str, context: dict[str, Any]) -> str:
     """Render an email template with the given context."""
-    template = env.get_template(template_name)
-    return template.render(**context)
+    try:
+        template = env.get_template(template_name)
+        return template.render(**context)
+    except Exception as e:
+        logger.error(f"Failed to render email template: {str(e)}", 
+                    extra={"template": template_name, "error": str(e)})
+        raise
 
 
 def generate_test_email(email_to: EmailStr) -> EmailData:

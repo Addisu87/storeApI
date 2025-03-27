@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -129,3 +130,12 @@ def test_access_token_expiration():
 
     token = create_access_token(subject, expires_delta)
     assert token
+
+
+# Add helper function for email mocking
+@pytest.fixture
+def mock_email_send():
+    """Fixture to mock email sending."""
+    with patch("app.api.routes.users.send_email", new_callable=AsyncMock) as mock:
+        mock.return_value = None
+        yield mock
