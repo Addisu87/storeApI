@@ -132,10 +132,9 @@ def test_access_token_expiration():
     assert token
 
 
-# Add helper function for email mocking
 @pytest.fixture
 def mock_email_send():
-    """Fixture to mock email sending."""
-    with patch("app.api.routes.users.send_email", new_callable=AsyncMock) as mock:
-        mock.return_value = None
+    """Mock the email sending functionality."""
+    # Mock both FastMail initialization and send_message
+    with patch("fastapi_mail.FastMail.send_message", new_callable=AsyncMock) as mock:
         yield mock

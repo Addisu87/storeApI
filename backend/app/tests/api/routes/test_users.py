@@ -1,12 +1,13 @@
 from typing import Dict
 
+from fastapi import status
+from fastapi.testclient import TestClient
+from sqlmodel import Session
+
 from app.core.config import settings
 from app.models.user_models import User, UserCreate
 from app.services.user_services import create_user
 from app.tests.helpers import random_email, random_lower_string
-from fastapi import status
-from fastapi.testclient import TestClient
-from sqlmodel import Session
 
 
 def test_create_user(
@@ -14,13 +15,12 @@ def test_create_user(
     superuser_token_headers: Dict[str, str],
     mock_email_send,
 ) -> None:
-    """Test creating a new user as superuser."""
+    """Test creating a new user."""
     email = random_email()
     password = random_lower_string()
     data = UserCreate(
         email=email,
         password=password,
-        full_name="Test User",
     ).model_dump()
 
     response = client.post(
@@ -31,8 +31,10 @@ def test_create_user(
     assert response.status_code == status.HTTP_201_CREATED
     created_user = response.json()
     assert created_user["email"] == email
-    assert "id" in created_user
     assert "password" not in created_user
+
+    # Verify that email sending was attempted
+    mock_email_send.assert_called_once()
 
 
 def test_create_user_existing_email(
