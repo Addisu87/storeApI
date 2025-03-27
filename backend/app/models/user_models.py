@@ -1,5 +1,5 @@
-import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
+from uuid import UUID, uuid4
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 # Shared properties
 class UserBase(SQLModel):
     email: str = Field(unique=True, index=True)
-    full_name: Optional[str] = None
+    full_name: str | None = None
     is_active: bool = True
     is_superuser: bool = False
 
@@ -34,7 +34,7 @@ class UserRegister(SQLModel):
 class User(UserBase, table=True):
     """Use string-based forward reference"""
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
     hashed_password: str
     is_active: bool = Field(default=True)
     is_superuser: bool = Field(default=False)
@@ -45,7 +45,7 @@ class User(UserBase, table=True):
 
 # Properties to return via API
 class UserPublic(UserBase):
-    id: uuid.UUID
+    id: UUID
 
 
 class UsersPublic(SQLModel):
@@ -55,14 +55,14 @@ class UsersPublic(SQLModel):
 
 # Properties to receive via API on update
 class UserUpdate(SQLModel):
-    email: Optional[str] = None
-    full_name: Optional[str] = None
-    password: Optional[str] = None
-    is_active: Optional[bool] = None
-    is_superuser: Optional[bool] = None
+    email: str | None = None
+    full_name: str | None = None
+    password: str | None = None
+    is_active: bool | None = None
+    is_superuser: bool | None = None
 
 
 class UserUpdateMe(SQLModel):
-    email: Optional[str] = None
-    full_name: Optional[str] = None
-    password: Optional[str] = None
+    email: str | None = None
+    full_name: str | None = None
+    password: str | None = None

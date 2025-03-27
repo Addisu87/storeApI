@@ -1,11 +1,13 @@
-import uuid
+from typing import List
+from uuid import UUID, uuid4
 
+from pydantic import BaseModel
 from sqlmodel import Field, Relationship, SQLModel
 
 
 # Forward reference for User (to avoid circular imports)
 class User(SQLModel):
-    id: uuid.UUID
+    id: UUID
 
 
 # Shared properties
@@ -26,18 +28,18 @@ class ItemUpdate(ItemBase):
 
 # Database model
 class Item(ItemBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
     title: str = Field(max_length=255)
-    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    owner_id: UUID = Field(foreign_key="user.id", nullable=False)
     owner: "User" = Relationship(back_populates="items")
 
 
 # Properties to return via API
 class ItemPublic(ItemBase):
-    id: uuid.UUID
-    owner_id: uuid.UUID
+    id: UUID
+    owner_id: UUID
 
 
-class ItemsPublic(SQLModel):
-    data: list[ItemPublic]
+class ItemsPublic(BaseModel):
+    data: List[ItemPublic]
     count: int
