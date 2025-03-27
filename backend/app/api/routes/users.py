@@ -28,7 +28,7 @@ from app.services.user_services import create_user, get_user_by_email
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix=f"{settings.API_V1_STR}/users", tags=["users"])
+router = APIRouter(prefix="/users", tags=["users"])
 
 
 # CREATE OPERATIONS

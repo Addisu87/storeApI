@@ -15,7 +15,7 @@ async def send_test_email(
     current_user=Depends(get_current_active_superuser),
 ):
     email_data = generate_test_email(email_to)
-    send_email(email_to, email_data, background_tasks)
+    await send_email(email_to, email_data, background_tasks)
     return {"message": "Email has been scheduled to be sent"}
 
 
