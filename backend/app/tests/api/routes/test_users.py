@@ -10,20 +10,13 @@ def test_create_user_success(client: TestClient, superuser_token_headers: dict):
     email = random_email()
     password = random_lower_string()
     data = {"email": email, "password": password}
-    
-    url = f"{settings.API_V1_STR}/users/"
-    print(f"Making request to: {url}")  # Debug print
-    print(f"Headers: {superuser_token_headers}")  # Debug print
-    
+
     response = client.post(
-        url,
+        f"{settings.API_V1_STR}/users/",
         headers=superuser_token_headers,
         json=data,
     )
-    
-    print(f"Response status: {response.status_code}")  # Debug print
-    print(f"Response body: {response.json()}")  # Debug print
-    
+
     assert response.status_code == status.HTTP_201_CREATED
     created_user = response.json()
     assert created_user["email"] == email
@@ -70,4 +63,6 @@ def test_delete_user_self_forbidden(
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert response.json()["detail"] == "Superuser cannot be deleted through this endpoint"
+    assert (
+        response.json()["detail"] == "Superuser cannot be deleted through this endpoint"
+    )

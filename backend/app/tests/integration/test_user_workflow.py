@@ -14,7 +14,7 @@ def test_complete_user_workflow(client):
 
     # 2. Login
     login_data = {"username": email, "password": password}
-    response = client.post("/api/v1/auth/login", data=login_data)
+    response = client.post("/api/v1/auth/login/access-token", data=login_data)
     assert response.status_code == status.HTTP_200_OK
     tokens = response.json()
     access_token = tokens["access_token"]

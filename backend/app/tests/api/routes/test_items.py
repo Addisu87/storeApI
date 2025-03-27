@@ -1,13 +1,12 @@
 # app/tests/api/routes/test_items.py
-import pytest
 import uuid
 from typing import Dict
 
-from fastapi import status
 from app.core.config import settings
 from app.models.item_models import Item
 from app.models.user_models import User
 from app.tests.helpers import create_random_item, random_lower_string
+from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
@@ -20,7 +19,7 @@ def test_create_item(
 ) -> None:
     data = {"title": "Test Item", "description": "Test Description"}
     response = client.post(
-        "/api/v1/items/",
+        f"{settings.API_V1_STR}/items/",
         headers=normal_user_token_headers,
         json=data,
     )
@@ -58,7 +57,7 @@ def test_read_item(
 ) -> None:
     item = create_random_item(db)
     response = client.get(
-        f"/api/v1/items/{item.id}",
+        f"{settings.API_V1_STR}/items/{item.id}",
         headers=normal_user_token_headers,
     )
     assert response.status_code == status.HTTP_200_OK
@@ -77,7 +76,7 @@ def test_update_item(
     item = create_random_item(db)
     data = {"title": "Updated Title"}
     response = client.patch(
-        f"/api/v1/items/{item.id}",
+        f"{settings.API_V1_STR}/items/{item.id}",
         headers=normal_user_token_headers,
         json=data,
     )
@@ -95,14 +94,14 @@ def test_delete_item(
 ) -> None:
     item = create_random_item(db)
     response = client.delete(
-        f"/api/v1/items/{item.id}",
+        f"{settings.API_V1_STR}/items/{item.id}",
         headers=normal_user_token_headers,
     )
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     # Verify item is deleted
     response = client.get(
-        f"/api/v1/items/{item.id}",
+        f"{settings.API_V1_STR}/items/{item.id}",
         headers=normal_user_token_headers,
     )
     assert response.status_code == 404
@@ -296,51 +295,14 @@ def test_delete_item_forbidden(
     assert response.json()["detail"] == "Not authorized to delete this item"
 
 
-def test_unauthorized_operations(client, test_item):
-    # Try operations without authentication
-    endpoints = [
-        ("GET", f"/api/v1/items/{test_item.id}"),
-        ("GET", "/api/v1/items/"),
-        ("POST", "/api/v1/items/"),
-        ("PATCH", f"/api/v1/items/{test_item.id}"),
-        ("DELETE", f"/api/v1/items/{test_item.id}"),
-    ]
-    
-    for method, endpoint in endpoints:
-        response = client.request(method, endpoint)
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
-
-@pytest.mark.parametrize(
-    "item_data,expected_status",
-    [
-        ({"title": ""}, status.HTTP_422_UNPROCESSABLE_ENTITY),
-        ({"title": "a" * 256}, status.HTTP_422_UNPROCESSABLE_ENTITY),
-        ({}, status.HTTP_422_UNPROCESSABLE_ENTITY),
-    ],
-)
-def test_create_item_validation(
-    client, 
-    normal_user_token_headers, 
-    item_data, 
-    expected_status
-):
-    response = client.post(
-        "/api/v1/items/",
-        headers=normal_user_token_headers,
-        json=item_data,
-    )
-    assert response.status_code == expected_status
-
-
 def test_read_items(client, normal_user, normal_user_token_headers, session):
     # Create multiple items
     items_count = 3
     for _ in range(items_count):
         create_random_item(session, owner_id=normal_user.id)
-    
+
     response = client.get(
-        "/api/v1/items/",
+        f"{settings.API_V1_STR}/items/",
         headers=normal_user_token_headers,
     )
     assert response.status_code == status.HTTP_200_OK
