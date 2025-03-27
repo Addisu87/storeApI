@@ -1,13 +1,14 @@
+from datetime import timedelta
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
-from datetime import timedelta
 
 from app.core.config import get_settings
-from app.core.security import create_access_token, get_password_hash
+from app.core.deps import get_db
+from app.core.security import create_access_token, get_password_hash, verify_password
 from app.main import app
 from app.models.user_models import User
-from app.core.deps import get_db
 
 
 # Test database setup
@@ -48,7 +49,7 @@ def superuser_fixture(session):
         hashed_password=get_password_hash("supersecret"),
         is_superuser=True,
         is_active=True,
-        full_name="Super User"
+        full_name="Super User",
     )
     session.add(user)
     session.commit()
@@ -63,7 +64,22 @@ def normal_user_fixture(session):
         hashed_password=get_password_hash("usersecret"),
         is_superuser=False,
         is_active=True,
-        full_name="Normal User"
+        full_name="Normal User",
+    )
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+@pytest.fixture(name="other_user")
+def other_user_fixture(session: Session) -> User:
+    user = User(
+        email="other@example.com",
+        hashed_password=get_password_hash("othersecret"),
+        is_superuser=False,
+        is_active=True,
+        full_name="Other User",
     )
     session.add(user)
     session.commit()
@@ -92,7 +108,7 @@ def normal_user_token_headers_fixture(normal_user: User) -> dict[str, str]:
 def test_password_hashing():
     password = "testpassword123"
     hashed = get_password_hash(password)
-    
+
     assert hashed != password
     assert verify_password(password, hashed)
     assert not verify_password("wrongpassword", hashed)
@@ -101,7 +117,7 @@ def test_password_hashing():
 def test_access_token_creation():
     subject = "test@example.com"
     expires_delta = timedelta(minutes=15)
-    
+
     token = create_access_token(subject, expires_delta)
     assert token
     assert isinstance(token, str)
@@ -110,6 +126,6 @@ def test_access_token_creation():
 def test_access_token_expiration():
     subject = "test@example.com"
     expires_delta = timedelta(minutes=-1)  # Already expired
-    
+
     token = create_access_token(subject, expires_delta)
     assert token

@@ -3,14 +3,11 @@ import string
 import uuid
 from typing import Dict
 
-from pydantic import EmailStr
 from sqlmodel import Session
 
-from app.core.security import get_password_hash
 from app.models.item_models import Item
-from app.models.user_models import User
+from app.models.user_models import User, UserCreate
 from app.services.user_services import create_user
-from app.models.user_models import UserCreate
 
 
 def random_lower_string(length: int = 32) -> str:
@@ -49,9 +46,7 @@ def create_random_item(session: Session, owner_id: uuid.UUID) -> Item:
     return item
 
 
-def user_authentication_headers(
-    *, client, email: str, password: str
-) -> Dict[str, str]:
+def user_authentication_headers(*, client, email: str, password: str) -> Dict[str, str]:
     data = {"username": email, "password": password}
     response = client.post("/api/v1/auth/login", data=data)
     auth_token = response.json()["access_token"]

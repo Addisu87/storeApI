@@ -3,6 +3,7 @@ from app.models.user_models import User
 from app.tests.helpers import random_email, random_lower_string
 from fastapi import status
 from fastapi.testclient import TestClient
+from unittest.mock import patch
 
 
 def test_create_user_success(client: TestClient, superuser_token_headers: dict):
@@ -11,16 +12,24 @@ def test_create_user_success(client: TestClient, superuser_token_headers: dict):
     password = random_lower_string()
     data = {"email": email, "password": password}
 
-    response = client.post(
-        f"{settings.API_V1_STR}/users/",
-        headers=superuser_token_headers,
-        json=data,
-    )
+    # Mock the send_email function
+    with patch("app.api.routes.users.send_email") as mock_send_email:
+        response = client.post(
+            f"{settings.API_V1_STR}/users/",
+            headers=superuser_token_headers,
+            json=data,
+        )
 
-    assert response.status_code == status.HTTP_201_CREATED
-    created_user = response.json()
-    assert created_user["email"] == email
-    assert "id" in created_user
+        assert response.status_code == status.HTTP_201_CREATED
+        created_user = response.json()
+        assert created_user["email"] == email
+        assert "id" in created_user
+
+        # Verify that send_email was called if emails are enabled
+        if settings.EMAILS_ENABLED:
+            mock_send_email.assert_called_once()
+        else:
+            mock_send_email.assert_not_called()
 
 
 def test_read_users(client: TestClient, superuser_token_headers: dict):
