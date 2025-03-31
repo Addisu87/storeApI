@@ -1,10 +1,9 @@
 # app/api/routes/auth.py
 
 from datetime import timedelta
-from typing import Annotated, Any
+from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 
 from app.core.deps import CurrentUser, SessionDep
 from app.core.security import (
@@ -21,11 +20,13 @@ from app.services.password_services import verify_password_reset_token
 from app.services.user_services import create_user, get_user_by_email
 from app.utilities.constants import email_reset_token_expire_hours
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="", tags=["auth"])
 
 
 @router.post(
-    "/register", response_model=UserPublic, status_code=status.HTTP_201_CREATED
+    "/register", 
+    response_model=UserPublic, 
+    status_code=status.HTTP_201_CREATED
 )
 def register_user(*, session: SessionDep, user_in: UserRegister) -> Any:
     """Register new user."""
@@ -50,11 +51,12 @@ def register_user(*, session: SessionDep, user_in: UserRegister) -> Any:
 
 @router.post("/login/access-token", response_model=Token)
 def login_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], session: SessionDep
+    login_data: UserRegister,
+    session: SessionDep,
 ) -> Token:
     """OAuth2 compatible token login, get an access token for future requests."""
-    user = get_user_by_email(session=session, email=form_data.username)
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    user = get_user_by_email(session=session, email=login_data.email)
+    if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

@@ -74,13 +74,19 @@ async def read_user_me(current_user: CurrentUser) -> UserPublic:
 async def read_users(
     session: SessionDep,
     current_user: Annotated[User, Depends(get_current_user)],
-    offset: int = 0,
-    limit: int = Query(default=100, le=100),
+    skip: int = Query(default=0, ge=0, description="Number of users to skip"),
+    limit: int = Query(default=10, le=100, description="Max number of users to return"),
 ) -> UsersPublic:
-    """Retrieve users."""
-    statement = select(User).offset(offset).limit(limit)
+    """
+    Retrieve users with pagination.
+
+    - **skip**: Number of records to skip (pagination offset)
+    - **limit**: Maximum number of records to return
+    """
+    statement = select(User).offset(skip).limit(limit)
     users = session.exec(statement).all()
     total = session.exec(select(func.count()).select_from(User)).first()
+
     return UsersPublic(
         data=[UserPublic.model_validate(user) for user in users], count=total or 0
     )

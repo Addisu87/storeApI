@@ -85,13 +85,24 @@ def test_get_users_pagination(
         user_in = UserCreate(email=random_email(), password=random_lower_string())
         create_user(session=session, user_create=user_in)
 
+    # Test first page
     response = client.get(
-        f"{settings.API_V1_STR}/users/?offset=0&limit=3",
+        f"{settings.API_V1_STR}/users/?skip=0&limit=3",
         headers=superuser_token_headers,
     )
     assert response.status_code == status.HTTP_200_OK
     users = response.json()
     assert len(users["data"]) == 3
+    
+    # Test second page
+    response = client.get(
+        f"{settings.API_V1_STR}/users/?skip=3&limit=3",
+        headers=superuser_token_headers,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    users = response.json()
+    assert len(users["data"]) > 0
+    assert users["count"] >= 5  # Total count should include all users
 
 
 def test_get_current_user(
