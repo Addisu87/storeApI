@@ -29,5 +29,9 @@ def verify_password_reset_token(token: str) -> str | None:
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
         return str(decoded_token["sub"])
-    except InvalidTokenError:
+    except InvalidTokenError as e:
+        logger.error(f"Invalid token error: {str(e)}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error verifying token: {str(e)}")
         return None

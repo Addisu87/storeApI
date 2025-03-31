@@ -24,9 +24,7 @@ router = APIRouter(prefix="", tags=["auth"])
 
 
 @router.post(
-    "/register", 
-    response_model=UserPublic, 
-    status_code=status.HTTP_201_CREATED
+    "/register", response_model=UserPublic, status_code=status.HTTP_201_CREATED
 )
 def register_user(*, session: SessionDep, user_in: UserRegister) -> Any:
     """Register new user."""
@@ -79,8 +77,13 @@ def login_access_token(
 
 
 @router.post("/login/test-token", response_model=UserPublic)
-def test_token(current_user: CurrentUser) -> Any:
+async def test_token(current_user: CurrentUser) -> Any:
     """Test access token."""
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
     return current_user
 
 
@@ -103,11 +106,13 @@ async def recover_password(
         subject=email,
         expires_delta=timedelta(hours=email_reset_token_expire_hours()),
     )
+
     email_data = generate_reset_password_email(
         email_to=email,
         email=email,
         token=password_reset_token,
     )
+
     await send_email(
         email_to=email,
         email_data=email_data,
