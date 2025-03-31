@@ -92,6 +92,24 @@ async def read_users(
     )
 
 
+@router.get("/{user_id}", response_model=UserPublic)
+async def get_user_by_id(
+    user_id: uuid.UUID,
+    session: SessionDep,
+    current_user: Annotated[User, Depends(get_current_active_superuser)],
+) -> UserPublic:
+    """
+    Get a specific user by ID.
+    Only superusers can access this endpoint.
+    """
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    return UserPublic.model_validate(user)
+
+
 # UPDATE OPERATIONS
 @router.patch("/me", response_model=UserPublic)
 async def update_user_me(
@@ -187,3 +205,34 @@ async def delete_user_me(
     session.delete(current_user)
     session.commit()
     return Message(message="User deleted successfully")
+
+
+@router.delete(
+    "/{user_id}",
+    response_model=Message,
+    dependencies=[Depends(get_current_active_superuser)],
+)
+async def delete_user(
+    user_id: uuid.UUID,
+    session: SessionDep,
+) -> Message:
+    """
+    Delete a user by ID.
+    Only superusers can access this endpoint.
+    """
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    if user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Superuser cannot be deleted through this endpoint"
+        )
+
+    session.delete(user)
+    session.commit()
+    return Message(message=f"User {user.email} deleted successfully")
