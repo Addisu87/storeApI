@@ -1,4 +1,4 @@
-# FastAPI Backend Project
+# Enterprise FastAPI Backend Template
 
 <div align="center">
 
@@ -8,7 +8,7 @@
 ![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)
 ![Testing](https://img.shields.io/badge/testing-pytest-green?style=for-the-badge&logo=pytest)
 
-A production-ready FastAPI backend with modern tooling, comprehensive testing, and enterprise-grade features.
+A modern, production-ready FastAPI backend template featuring enterprise-grade architecture, comprehensive testing, and advanced security features. Built with scalability and developer experience in mind.
 
 [Features](#features) •
 [Quick Start](#quick-start) •
@@ -29,18 +29,20 @@ A production-ready FastAPI backend with modern tooling, comprehensive testing, a
 
 ### Security & Authentication
 
-- 🔐 JWT authentication with refresh tokens
-- 🔒 Role-based access control (RBAC)
-- 🛡️ Built-in security headers and CORS
-- 🔑 Password hashing with bcrypt
+- 🔐 JWT-based authentication with refresh token rotation
+- 🛡️ Role-based access control (RBAC) with granular permissions
+- 🔒 Password hashing with Bcrypt and salt
+- 🚫 Rate limiting and brute force protection
+- 🔍 Security headers and CORS configuration
 
 ### Developer Experience
 
-- 📝 OpenAPI documentation (Swagger/ReDoc)
-- 🧪 Comprehensive test suite with pytest
-- 🔍 Type checking with mypy
-- 📊 Code coverage reporting
-- 🎨 Code formatting with black and isort
+- 🚀 Hot reload for rapid development
+- 📝 Auto-generated OpenAPI/Swagger documentation
+- 🧪 Comprehensive test suite with pytest fixtures
+- 📊 100% type coverage with mypy
+- 🎨 Automated code formatting with black and isort
+- 🐛 Advanced debugging support
 
 ### Production Features
 
